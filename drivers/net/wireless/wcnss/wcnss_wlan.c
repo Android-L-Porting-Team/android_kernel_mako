@@ -54,6 +54,10 @@ static DEFINE_SPINLOCK(reg_spinlock);
 #define WCNSS_CTRL_MSG_START	0x01000000
 #define	WCNSS_VERSION_REQ		(WCNSS_CTRL_MSG_START + 0)
 #define	WCNSS_VERSION_RSP		(WCNSS_CTRL_MSG_START + 1)
+#define	WCNSS_BUILD_VER_RSP           (WCNSS_CTRL_MSG_START + 10)
+
+/* max 20mhz channel count */
+#define WCNSS_MAX_CH_NUM			45
 
 #define VALID_VERSION(version) \
 	((strncmp(version, "INVALID", WCNSS_VERSION_LEN)) ? 1 : 0)
@@ -92,6 +96,8 @@ static struct {
 	struct work_struct wcnssctrl_rx_work;
 	struct wake_lock wcnss_wake_lock;
 	void __iomem *msm_wcnss_base;
+	u16 unsafe_ch_count;
+	u16 unsafe_ch_list[WCNSS_MAX_CH_NUM];
 } *penv = NULL;
 
 static ssize_t wcnss_serial_number_show(struct device *dev,
@@ -576,6 +582,35 @@ void wcnss_allow_suspend()
 		wake_unlock(&penv->wcnss_wake_lock);
 }
 EXPORT_SYMBOL(wcnss_allow_suspend);
+
+int wcnss_set_wlan_unsafe_channel(u16 *unsafe_ch_list, u16 ch_count)
+{
+	if (penv && unsafe_ch_list &&
+		(ch_count <= WCNSS_MAX_CH_NUM)) {
+		memcpy((char *)penv->unsafe_ch_list,
+			(char *)unsafe_ch_list, ch_count * sizeof(u16));
+		penv->unsafe_ch_count = ch_count;
+		return 0;
+	} else
+		return -ENODEV;
+}
+EXPORT_SYMBOL(wcnss_set_wlan_unsafe_channel);
+
+int wcnss_get_wlan_unsafe_channel(u16 *unsafe_ch_list, u16 buffer_size,
+					u16 *ch_count)
+{
+	if (penv) {
+		if (buffer_size < penv->unsafe_ch_count * sizeof(u16))
+			return -ENODEV;
+		memcpy((char *)unsafe_ch_list,
+			(char *)penv->unsafe_ch_list,
+			penv->unsafe_ch_count * sizeof(u16));
+		*ch_count = penv->unsafe_ch_count;
+		return 0;
+	} else
+		return -ENODEV;
+}
+EXPORT_SYMBOL(wcnss_get_wlan_unsafe_channel);
 
 static int wcnss_smd_tx(void *data, int len)
 {
