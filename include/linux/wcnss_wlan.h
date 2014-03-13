@@ -61,6 +61,7 @@ void wcnss_allow_suspend(void);
 void wcnss_prevent_suspend(void);
 void wcnss_ssr_boot_notify(void);
 void wcnss_reset_intr(void);
+int wcnss_device_is_shutdown(void);
 int wcnss_wlan_iris_xo_mode(void);
 int wcnss_set_wlan_unsafe_channel(
 				u16 *unsafe_ch_list, u16 ch_count);

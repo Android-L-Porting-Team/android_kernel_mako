@@ -101,6 +101,7 @@ static struct {
 	char	wlan_nv_macAddr[WLAN_MAC_ADDR_SIZE];
 	u16 unsafe_ch_count;
 	u16 unsafe_ch_list[WCNSS_MAX_CH_NUM];
+	u8 is_shutdown;
 } *penv = NULL;
 
 static ssize_t wcnss_wlan_macaddr_store(struct device *dev,
@@ -440,6 +441,14 @@ struct wcnss_wlan_config *wcnss_get_wlan_config(void)
 	return NULL;
 }
 EXPORT_SYMBOL(wcnss_get_wlan_config);
+
+int wcnss_device_is_shutdown(void)
+{
+	if (penv && penv->is_shutdown)
+		return 1;
+	return 0;
+}
+EXPORT_SYMBOL(wcnss_device_is_shutdown);
 
 struct resource *wcnss_wlan_get_memory_map(struct device *dev)
 {
