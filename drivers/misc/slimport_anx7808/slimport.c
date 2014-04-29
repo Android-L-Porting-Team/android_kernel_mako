@@ -50,6 +50,11 @@ int sp_read_reg(uint8_t slave_addr, uint8_t offset, uint8_t *buf)
 {
 	int ret = 0;
 
+	if (sp_tx_pd_mode) {
+		pr_debug("tried to access the sp reg after power down\n");
+		return -EIO;
+	}
+
 	anx7808_client->addr = (slave_addr >> 1);
 	ret = i2c_smbus_read_byte_data(anx7808_client, offset);
 	if (ret < 0) {
@@ -65,6 +70,11 @@ int sp_read_reg(uint8_t slave_addr, uint8_t offset, uint8_t *buf)
 int sp_write_reg(uint8_t slave_addr, uint8_t offset, uint8_t value)
 {
 	int ret = 0;
+	
+	if (sp_tx_pd_mode) {
+		pr_debug("tried to access the sp reg after power down\n");
+		return -EIO;
+	}
 
 	anx7808_client->addr = (slave_addr >> 1);
 	ret = i2c_smbus_write_byte_data(anx7808_client, offset, value);
