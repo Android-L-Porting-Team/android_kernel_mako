@@ -1,25 +1,5 @@
 /*
- * Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
- *
- * Permission to use, copy, modify, and/or distribute this software for
- * any purpose with or without fee is hereby granted, provided that the
- * above copyright notice and this permission notice appear in all
- * copies.
- *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
- * WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
- * AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL
- * DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR
- * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
- * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
- * PERFORMANCE OF THIS SOFTWARE.
- */
-/*
- * Copyright (c) 2012, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2011-2014 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -40,8 +20,13 @@
  */
 
 /*
+ * This file was originally distributed by Qualcomm Atheros, Inc.
+ * under proprietary terms before Copyright ownership was assigned
+ * to the Linux Foundation.
+ */
+
+/*
  *
- * Airgo Networks, Inc proprietary. All rights reserved.
  * This file contains the source code for CFG API functions.
  *
  * Author:      Kevin Nguyen
@@ -68,10 +53,12 @@ static tANI_U8   __gSBuffer[CFG_MAX_STR_LEN]                   ;
 static tANI_U32  __gParamList[WNI_CFG_MAX_PARAM_NUM + 
                               WNI_CFG_GET_PER_STA_STAT_RSP_NUM];
 
+
 static void Notify(tpAniSirGlobal, tANI_U16, tANI_U32);
 
-
-// ---------------------------------------------------------------------
+extern tAniSirCfgStaticString cfgStaticString[CFG_MAX_STATIC_STRING];
+extern tAniSirCgStatic cfgStatic[CFG_PARAM_MAX_NUM] ;
+//---------------------------------------------------------------------
 tANI_U32 cfgNeedRestart(tpAniSirGlobal pMac, tANI_U16 cfgId)
 {
     if (!pMac->cfg.gCfgEntry)
@@ -127,10 +114,28 @@ wlan_cfgInit(tpAniSirGlobal pMac)
 
 } /*** end wlan_cfgInit() ***/
 
+void cfgGetStrIndex(tpAniSirGlobal pMac, tANI_U16 cfgId)
+{
+    tANI_U16 i = 0;
+
+    for(i = 0; i < CFG_MAX_STATIC_STRING; i++)
+    {
+        if(cfgId == cfgStaticString[i].cfgId)
+            break;
+    }
+    if(i == CFG_MAX_STATIC_STRING)
+    {
+        PELOGE(cfgLog(pMac, LOGE, FL("Entry not found for cfg id :%d"), cfgId);)
+        cfgStatic[cfgId].pStrData = NULL;
+        return;
+    }
+    cfgStatic[cfgId].pStrData = &cfgStaticString[i];
+}
 
 //---------------------------------------------------------------------
 tSirRetStatus cfgInit(tpAniSirGlobal pMac)
 {
+   tANI_U16 i = 0;
    pMac->cfg.gCfgIBufMin  = __gCfgIBufMin;
    pMac->cfg.gCfgIBufMax  = __gCfgIBufMax;
    pMac->cfg.gCfgIBuf     = __gCfgIBuf;
@@ -138,7 +143,18 @@ tSirRetStatus cfgInit(tpAniSirGlobal pMac)
    pMac->cfg.gSBuffer     = __gSBuffer;
    pMac->cfg.gCfgEntry    = __gCfgEntry;
    pMac->cfg.gParamList   = __gParamList;
-        
+
+   for(i=0; i<CFG_PARAM_MAX_NUM; i++)
+   {
+       if (!(cfgStatic[i].control & CFG_CTL_INT))
+       {
+           cfgGetStrIndex(pMac, i);
+       }
+       else
+       {
+           cfgStatic[i].pStrData = NULL;
+       }
+   }
    return (eSIR_SUCCESS);
 }
 
@@ -193,7 +209,6 @@ cfgSetInt(tpAniSirGlobal pMac, tANI_U16 cfgId, tANI_U32 value)
         PELOGE(cfgLog(pMac, LOGE, FL("Invalid cfg id %d"), cfgId);)
         return eSIR_CFG_INVALID_ID;
     }
-
     if (!pMac->cfg.gCfgEntry)
     {
         PELOGE(cfgLog(pMac, LOGE, FL("gCfgEntry is NULL"));)
@@ -274,7 +289,6 @@ cfgCheckValid(tpAniSirGlobal pMac, tANI_U16 cfgId)
         PELOG3(cfgLog(pMac, LOG3, FL("Invalid cfg id %d"), cfgId);)
         return(eSIR_CFG_INVALID_ID);
     }
-
     if (!pMac->cfg.gCfgEntry)
     {
         PELOGE(cfgLog(pMac, LOGE, FL("gCfgEntry is NULL"));)
@@ -327,7 +341,6 @@ wlan_cfgGetInt(tpAniSirGlobal pMac, tANI_U16 cfgId, tANI_U32 *pValue)
         retVal = eSIR_CFG_INVALID_ID;
         return retVal;
     }
-
     if (!pMac->cfg.gCfgEntry)
     {
         PELOGE(cfgLog(pMac, LOGE, FL("gCfgEntry is NULL"));)
@@ -397,7 +410,6 @@ cfgIncrementInt(tpAniSirGlobal pMac, tANI_U16 cfgId, tANI_U32 value)
         PELOGE(cfgLog(pMac, LOGE, FL("Invalid cfg id %d"), cfgId);)
         retVal = eSIR_CFG_INVALID_ID;
     }
-
     if (!pMac->cfg.gCfgEntry)
     {
         PELOGE(cfgLog(pMac, LOGE, FL("gCfgEntry is NULL"));)
@@ -501,7 +513,6 @@ cfgSetStrNotify(tpAniSirGlobal pMac, tANI_U16 cfgId, tANI_U8 *pStr,
         PELOGE(cfgLog(pMac, LOGE, FL("Invalid cfg id %d"), cfgId);)
         return eSIR_CFG_INVALID_ID;
     }
-
     if (!pMac->cfg.gCfgEntry)
     {
         PELOGE(cfgLog(pMac, LOGE, FL("gCfgEntry is NULL"));)
@@ -605,11 +616,10 @@ wlan_cfgGetStr(tpAniSirGlobal pMac, tANI_U16 cfgId, tANI_U8 *pBuf, tANI_U32 *pLe
         retVal = eSIR_CFG_INVALID_ID;
         return retVal;
     }
-
-    if (!pMac->cfg.gCfgEntry) {
-        PELOGE(cfgLog(pMac, LOGE, FL("gCfgEntry is NULL"), cfgId);)
-        retVal = eSIR_CFG_INVALID_ID;
-        return retVal;
+    if (!pMac->cfg.gCfgEntry)
+    {
+        PELOGE(cfgLog(pMac, LOGE, FL("gCfgEntry is NULL"));)
+        return eSIR_CFG_INVALID_ID;
     }
 
     control  = pMac->cfg.gCfgEntry[cfgId].control;
@@ -687,7 +697,6 @@ wlan_cfgGetStrMaxLen(tpAniSirGlobal pMac, tANI_U16 cfgId, tANI_U32 *pLength)
         PELOGE(cfgLog(pMac, LOGE, FL("Invalid cfg id %d"), cfgId);)
         retVal = eSIR_CFG_INVALID_ID;
     }
-
     if (!pMac->cfg.gCfgEntry)
     {
         PELOGE(cfgLog(pMac, LOGE, FL("gCfgEntry is NULL"));)
@@ -754,7 +763,6 @@ wlan_cfgGetStrLen(tpAniSirGlobal pMac, tANI_U16 cfgId, tANI_U32 *pLength)
         PELOGE(cfgLog(pMac, LOGE, FL("Invalid cfg id %d"), cfgId);)
         retVal = eSIR_CFG_INVALID_ID;
     }
-
     if (!pMac->cfg.gCfgEntry)
     {
         PELOGE(cfgLog(pMac, LOGE, FL("gCfgEntry is NULL"));)
@@ -802,7 +810,6 @@ cfgGetDot11dTransmitPower(tpAniSirGlobal pMac, tANI_U16   cfgId,
     tANI_U8    *pCountryInfo = NULL;
     tANI_U8    count = 0;
     tPowerdBm  maxTxPwr = WDA_MAX_TXPOWER_INVALID;
-    eHalStatus    status;
     
     /* At least one element is present */
     if(cfgLength < sizeof(tSirMacChanInfo))
@@ -811,10 +818,10 @@ cfgGetDot11dTransmitPower(tpAniSirGlobal pMac, tANI_U16   cfgId,
         goto error;
     }
 
-    status = palAllocateMemory(pMac->hHdd, (void **)&pCountryInfo, cfgLength);
-    if (status != eHAL_STATUS_SUCCESS)
+    pCountryInfo = vos_mem_malloc(cfgLength);
+    if ( NULL == pCountryInfo )
     {
-        cfgLog(pMac, LOGP, FL(" palAllocateMemory() failed, status = %d"), status);
+        cfgLog(pMac, LOGP, FL(" failed to allocate memory"));
         goto error;
     }
     /* The CSR will always update this CFG. The contents will be from country IE if regulatory domain
@@ -822,7 +829,7 @@ cfgGetDot11dTransmitPower(tpAniSirGlobal pMac, tANI_U16   cfgId,
      */
     if (wlan_cfgGetStr(pMac, cfgId, pCountryInfo, &cfgLength) != eSIR_SUCCESS)
     {
-        palFreeMemory(pMac->hHdd, pCountryInfo);
+        vos_mem_free(pCountryInfo);
         pCountryInfo = NULL;
             
         cfgLog(pMac, LOGP, FL("Failed to retrieve 11d configuration parameters while retrieving 11d tuples"));
@@ -845,8 +852,8 @@ cfgGetDot11dTransmitPower(tpAniSirGlobal pMac, tANI_U16   cfgId,
     }
 
 error:
-    if(NULL != pCountryInfo)
-        palFreeMemory(pMac->hHdd, pCountryInfo);
+    if (NULL != pCountryInfo)
+        vos_mem_free(pCountryInfo);
        
     return maxTxPwr;
 }
@@ -1003,7 +1010,7 @@ cfgGetCapabilityInfo(tpAniSirGlobal pMac, tANI_U16 *pCap,tpPESession sessionEntr
     }
 
     // Spectrum Management bit
-    if((eLIM_STA_IN_IBSS_ROLE != systemRole) &&
+    if((eLIM_STA_IN_IBSS_ROLE != systemRole) && (eLIM_AP_ROLE != systemRole) &&
             sessionEntry->lim11hEnable )
     {
       if (wlan_cfgGetInt(pMac, WNI_CFG_11H_ENABLED, &val) != eSIR_SUCCESS)

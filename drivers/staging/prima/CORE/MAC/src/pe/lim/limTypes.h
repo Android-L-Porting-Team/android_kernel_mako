@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2014 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -18,28 +18,16 @@
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
  */
+
 /*
- * Copyright (c) 2012, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2013 Qualcomm Atheros, Inc.
+ * All Rights Reserved.
+ * Qualcomm Atheros Confidential and Proprietary.
  *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
- *
- * Permission to use, copy, modify, and/or distribute this software for
- * any purpose with or without fee is hereby granted, provided that the
- * above copyright notice and this permission notice appear in all
- * copies.
- *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
- * WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
- * AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL
- * DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR
- * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
- * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
- * PERFORMANCE OF THIS SOFTWARE.
  */
+
+
 /*
- * Airgo Networks, Inc proprietary. All rights reserved.
  * This file limTypes.h contains the definitions used by all
  * all LIM modules.
  * Author:        Chandra Modumudi
@@ -135,13 +123,13 @@
 #define LIM_MIN_MEM_ASSOC       4
 
 /// Verifies whether given mac addr matches the CURRENT Bssid
-#define IS_CURRENT_BSSID(pMac, addr,psessionEntry)  (palEqualMemory(pMac->hHdd, addr, \
-                                                                                                psessionEntry->bssId, \
-                                                                                                sizeof(psessionEntry->bssId)))
+#define IS_CURRENT_BSSID(pMac, addr,psessionEntry)  (vos_mem_compare( addr, \
+                                                                      psessionEntry->bssId, \
+                                                                      sizeof(psessionEntry->bssId)))
 /// Verifies whether given addr matches the REASSOC Bssid
-#define IS_REASSOC_BSSID(pMac, addr,psessionEntry)  (palEqualMemory(pMac->hHdd, addr, \
-                                                                                                psessionEntry->limReAssocbssId, \
-                                                                                                sizeof(psessionEntry->limReAssocbssId)))
+#define IS_REASSOC_BSSID(pMac, addr,psessionEntry)  (vos_mem_compare( addr, \
+                                                                      psessionEntry->limReAssocbssId, \
+                                                                      sizeof(psessionEntry->limReAssocbssId)))
 
 #define REQ_TYPE_REGISTRAR                   (0x2)
 #define REQ_TYPE_WLAN_MANAGER_REGISTRAR      (0x3)
@@ -176,6 +164,7 @@ enum eChannelChangeReasonCodes
     LIM_SWITCH_CHANNEL_REASSOC,
     LIM_SWITCH_CHANNEL_JOIN,
     LIM_SWITCH_CHANNEL_OPERATION, // Generic change channel
+    LIM_SWITCH_CHANNEL_CSA,
 };
 
 typedef struct sLimAuthRspTimeout
@@ -717,7 +706,7 @@ tSirRetStatus limSendLinkReportActionFrame(tpAniSirGlobal, tpSirMacLinkReport, t
 tSirRetStatus limSendRadioMeasureReportActionFrame(tpAniSirGlobal, tANI_U8, tANI_U8, tpSirMacRadioMeasureReport, tSirMacAddr, tpPESession);
 #endif
 
-#ifdef FEATURE_WLAN_CCX
+#if defined(FEATURE_WLAN_ESE) && !defined(FEATURE_WLAN_ESE_UPLOAD)
 void limProcessIappFrame(tpAniSirGlobal, tANI_U8 *,tpPESession);
 #endif
 
@@ -738,6 +727,8 @@ void limInitTdlsData(tpAniSirGlobal, tpPESession);
 tSirRetStatus limProcessSmeTdlsMgmtSendReq(tpAniSirGlobal pMac, 
                                                            tANI_U32 *pMsgBuf);
 tSirRetStatus limProcessSmeTdlsAddStaReq(tpAniSirGlobal pMac, 
+                                                           tANI_U32 *pMsgBuf);
+tSirRetStatus limProcesSmeTdlsLinkEstablishReq(tpAniSirGlobal pMac,
                                                            tANI_U32 *pMsgBuf);
 tSirRetStatus limProcessSmeTdlsDelStaReq(tpAniSirGlobal pMac, 
                                                            tANI_U32 *pMsgBuf);
@@ -868,10 +859,14 @@ void limProcessMlmHalBADeleteInd( tpAniSirGlobal pMac,
 void limProcessMlmRemoveKeyRsp( tpAniSirGlobal pMac, tpSirMsgQ limMsgQ );
 
 void limProcessLearnIntervalTimeout(tpAniSirGlobal pMac);
+
 #ifdef WLAN_FEATURE_11W
+//11w send SA query request action frame
+tSirRetStatus limSendSaQueryRequestFrame( tpAniSirGlobal pMac, tANI_U8 *transId,
+                                          tSirMacAddr peer, tpPESession psessionEntry );
 //11w SA query request action frame handler
 tSirRetStatus limSendSaQueryResponseFrame( tpAniSirGlobal pMac, 
-                   tANI_U16 transId, tSirMacAddr peer,tpPESession psessionEntry);
+                   tANI_U8 *transId, tSirMacAddr peer,tpPESession psessionEntry);
 #endif
 // Inline functions
 
@@ -1062,10 +1057,9 @@ limChangeChannelWithCallback(tpAniSirGlobal pMac, tANI_U8 newChannel,
    CHANGE_CHANNEL_CALLBACK callback, tANI_U32 *cbdata, tpPESession psessionEntry);
 
 void limSendSmeMgmtFrameInd(
-                    tpAniSirGlobal pMac, tANI_U8 frameType,
-                    tANI_U8  *frame, tANI_U32 frameLen, tANI_U16 sessionId,
-                    tANI_U32 rxChan, tpPESession psessionEntry,
-                    tANI_S8 rxRssi);
+                    tpAniSirGlobal pMac, tANI_U16 sessionId,
+                    tANI_U8 *pRxPacketInfo,
+                    tpPESession psessionEntry, tANI_S8 rxRssi);
 void limProcessRemainOnChnTimeout(tpAniSirGlobal pMac);
 void limProcessInsertSingleShotNOATimeout(tpAniSirGlobal pMac);
 void limConvertActiveChannelToPassiveChannel(tpAniSirGlobal pMac);

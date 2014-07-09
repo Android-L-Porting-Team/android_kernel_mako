@@ -1,25 +1,5 @@
 /*
- * Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
- *
- * Permission to use, copy, modify, and/or distribute this software for
- * any purpose with or without fee is hereby granted, provided that the
- * above copyright notice and this permission notice appear in all
- * copies.
- *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
- * WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
- * AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL
- * DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR
- * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
- * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
- * PERFORMANCE OF THIS SOFTWARE.
- */
-/*
- * Copyright (c) 2012, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2011-2014 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -40,7 +20,9 @@
  */
 
 /*
- * Copyright (C) 2007-2009 QUALCOMM Incorporated. All rights reserved. Proprietary and Confidential.
+ * This file was originally distributed by Qualcomm Atheros, Inc.
+ * under proprietary terms before Copyright ownership was assigned
+ * to the Linux Foundation.
  */
 
 /*
@@ -350,8 +332,43 @@ unsigned char *gCfgParamName[] = {
     (unsigned char *)"ENABLE_MCC_ADAPTIVE_SCHED",
     (unsigned char *)"DISABLE_LDPC_WITH_TXBF_AP",
     (unsigned char *)"AP_LINK_MONITOR_TIMEOUT",
+    (unsigned char *)"TDLS_QOS_WMM_UAPSD_MASK",
+    (unsigned char *)"TDLS_BUF_STA_ENABLED",
+    (unsigned char *)"TDLS_PUAPSD_INACT_TIME",
+    (unsigned char *)"TDLS_RX_FRAME_THRESHOLD",
+    (unsigned char *)"ENABLE_ADAPT_RX_DRAIN",
+    (unsigned char *)"FLEX_CONNECT_POWER_FACTOR",
+    (unsigned char *)"ANTENNA_DIVESITY",
+    (unsigned char *)"GO_LINK_MONITOR_TIMEOUT",
+    (unsigned char *)"ATH_DISABLE",
+    (unsigned char *)"BTC_ACTIVE_WLAN_LEN",
+    (unsigned char *)"BTC_ACTIVE_BT_LEN",
+    (unsigned char *)"BTC_SAP_ACTIVE_WLAN_LEN",
+    (unsigned char *)"BTC_SAP_ACTIVE_BT_LEN",
+    (unsigned char *)"RMC_ACTION_PERIOD_FREQUENCY",
+    (unsigned char *)"ASD_PROBE_INTERVAL",
+    (unsigned char *)"ASD_TRIGGER_THRESHOLD",
+    (unsigned char *)"ASD_RTT_RSSI_HYST_THRESHOLD",
+    (unsigned char *)"DEBUG_P2P_REMAIN_ON_CHANNEL",
+    (unsigned char *)"BTC_CTS2S_DURING_SCO",
+    (unsigned char *)"CHANNEL_BONDING_24G",
+    (unsigned char *)"OBSS_HT40_SCAN_PASSIVE_DWELL_TIME",
+    (unsigned char *)"OBSS_HT40_SCAN_ACTIVE_DWELL_TIME",
+    (unsigned char *)"OBSS_HT40_SCAN_WIDTH_TRIGGER_INTERVAL",
+    (unsigned char *)"OBSS_HT40_SCAN_PASSIVE_TOTAL_PER_CHANNEL",
+    (unsigned char *)"OBSS_HT40_SCAN_ACTIVE_TOTAL_PER_CHANNEL",
+    (unsigned char *)"OBSS_HT40_WIDTH_CHANNEL_TRANSITION_DELAY_FACTOR",
+    (unsigned char *)"OBSS_HT40_SCAN_ACTIVITY_THRESHOLD",
+    (unsigned char *)"TDLS_OFF_CHANNEL_ENABLED",
+    (unsigned char *)"PMF_SA_QUERY_MAX_RETRIES",
+    (unsigned char *)"PMF_SA_QUERY_RETRY_INTERVAL",
     (unsigned char *)"RA_FILTER_ENABLE",
     (unsigned char *)"RA_RATE_LIMIT_INTERVAL",
+    (unsigned char *)"BTC_FATAL_HID_NSNIFF_BLK_GUIDANCE",
+    (unsigned char *)"BTC_CRITICAL_HID_NSNIFF_BLK_GUIDANCE",
+    (unsigned char *)"BTC_DYN_A2DP_TX_QUEUE_THOLD",
+    (unsigned char *)"BTC_DYN_OPP_TX_QUEUE_THOLD",
+    (unsigned char *)"TDLS_WMM_MODE_ENABLED",
 };
 
 

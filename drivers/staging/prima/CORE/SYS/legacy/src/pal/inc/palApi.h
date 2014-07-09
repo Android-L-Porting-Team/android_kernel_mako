@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2013 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -18,6 +18,13 @@
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
  */
+
+/*
+ * This file was originally distributed by Qualcomm Atheros, Inc.
+ * under proprietary terms before Copyright ownership was assigned
+ * to the Linux Foundation.
+ */
+
 /** ------------------------------------------------------------------------- *
     ------------------------------------------------------------------------- *
 
@@ -27,8 +34,6 @@
     \brief Exports and types for the Platform Abstraction Layer interfaces.
 
     $Id$
-
-    Copyright (C) 2006 Airgo Networks, Incorporated
     This file contains all the interfaces for thge Platform Abstration Layer
     functions.  It is intended to be included in all modules that are using
     the PAL interfaces.
@@ -205,6 +210,8 @@ eHalStatus palWriteDeviceMemory( tHddHandle hHdd, tANI_U32 memOffset, tANI_U8 *p
     try to use it unless the status returns success).
 
   -------------------------------------------------------------------------------*/
+#ifndef FEATURE_WLAN_PAL_MEM_DISABLE
+
 #ifdef MEMORY_DEBUG
 #define palAllocateMemory(hHdd, ppMemory, numBytes) palAllocateMemory_debug(hHdd, ppMemory, numBytes, __FILE__, __LINE__)
 eHalStatus palAllocateMemory_debug( tHddHandle hHdd, void **ppMemory, tANI_U32 numBytes, char* fileName, tANI_U32 lineNum );
@@ -326,7 +333,7 @@ eHalStatus palZeroMemory( tHddHandle hHdd, void *pMemory, tANI_U32 numBytes )
 
   -------------------------------------------------------------------------------*/
 tANI_BOOLEAN palEqualMemory( tHddHandle hHdd, void *pMemory1, void *pMemory2, tANI_U32 numBytes );
-
+#endif
 /** ---------------------------------------------------------------------------
 
     \fn palFillDeviceMemory

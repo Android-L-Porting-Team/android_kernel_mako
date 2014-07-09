@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2013 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -18,25 +18,11 @@
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
  */
+
 /*
- * Copyright (c) 2012, The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
- *
- * Permission to use, copy, modify, and/or distribute this software for
- * any purpose with or without fee is hereby granted, provided that the
- * above copyright notice and this permission notice appear in all
- * copies.
- *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
- * WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
- * AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL
- * DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR
- * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
- * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
- * PERFORMANCE OF THIS SOFTWARE.
+ * This file was originally distributed by Qualcomm Atheros, Inc.
+ * under proprietary terms before Copyright ownership was assigned
+ * to the Linux Foundation.
  */
 
 /**========================================================================= 
@@ -120,7 +106,7 @@ static bool suspend_notify_sent;
 ----------------------------------------------------------------------------*/
 static int wlan_suspend(hdd_context_t* pHddCtx)
 {
-   int rc = 0;
+   long rc = 0;
 
    pVosSchedContext vosSchedContext = NULL;
 
@@ -153,13 +139,29 @@ static int wlan_suspend(hdd_context_t* pHddCtx)
    /* Wait for Suspend Confirmation from Tx Thread */
    rc = wait_for_completion_interruptible_timeout(&pHddCtx->tx_sus_event_var, msecs_to_jiffies(200));
 
-   if(!rc)
+   if (rc <= 0)
    {
-      VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_FATAL, "%s: Not able to suspend TX thread timeout happened", __func__);
-      clear_bit(TX_SUSPEND_EVENT_MASK, &vosSchedContext->txEventFlag);
+      VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_FATAL,
+           "%s: TX Thread: timeout while suspending %ld"
+           , __func__, rc);
+      /* There is a race condition here, where the TX Thread can process the
+       * SUSPEND_EVENT even after the wait_for_completion has timed out.
+       * Check the SUSPEND_EVENT_MASK, if it is already cleared by the TX
+       * Thread then it means it is going to suspend, so do not return failure
+       * from here.
+       */
+      if (!test_and_clear_bit(TX_SUSPEND_EVENT_MASK,
+                              &vosSchedContext->txEventFlag))
+      {
+         VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
+                   "%s: TX Thread: will still suspend", __func__);
+         goto tx_suspend;
+      }
 
       return -ETIME;
    }
+
+tx_suspend:
    /* Set the Tx Thread as Suspended */
    pHddCtx->isTxThreadSuspended = TRUE;
 
@@ -173,11 +175,23 @@ static int wlan_suspend(hdd_context_t* pHddCtx)
    /* Wait for Suspend Confirmation from Rx Thread */
    rc = wait_for_completion_interruptible_timeout(&pHddCtx->rx_sus_event_var, msecs_to_jiffies(200));
 
-   if(!rc)
+   if (rc <= 0)
    {
-       VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_FATAL, "%s: Not able to suspend Rx thread timeout happened", __func__);
-
-       clear_bit(RX_SUSPEND_EVENT_MASK, &vosSchedContext->rxEventFlag);
+       VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_FATAL,
+            "%s: RX Thread: timeout while suspending %ld", __func__, rc);
+       /* There is a race condition here, where the RX Thread can process the
+        * SUSPEND_EVENT even after the wait_for_completion has timed out.
+        * Check the SUSPEND_EVENT_MASK, if it is already cleared by the RX
+        * Thread then it means it is going to suspend, so do not return failure
+        * from here.
+        */
+       if (!test_and_clear_bit(RX_SUSPEND_EVENT_MASK,
+                               &vosSchedContext->rxEventFlag))
+       {
+           VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
+                     "%s: RX Thread: will still suspend", __func__);
+           goto rx_suspend;
+       }
 
        /* Indicate Tx Thread to Resume */
        complete(&vosSchedContext->ResumeTxEvent);
@@ -188,6 +202,7 @@ static int wlan_suspend(hdd_context_t* pHddCtx)
        return -ETIME;
    }
 
+rx_suspend:
    /* Set the Rx Thread as Suspended */
    pHddCtx->isRxThreadSuspended = TRUE;
 
@@ -203,9 +218,22 @@ static int wlan_suspend(hdd_context_t* pHddCtx)
 
    if(!rc)
    {
-       VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_FATAL, "%s: Not able to suspend MC thread timeout happened", __func__);
-
-       clear_bit(MC_SUSPEND_EVENT_MASK, &vosSchedContext->mcEventFlag);
+       VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_FATAL,
+            "%s: MC Thread: timeout while suspending %ld",
+            __func__, rc);
+       /* There is a race condition here, where the MC Thread can process the
+        * SUSPEND_EVENT even after the wait_for_completion has timed out.
+        * Check the SUSPEND_EVENT_MASK, if it is already cleared by the MC
+        * Thread then it means it is going to suspend, so do not return failure
+        * from here.
+        */
+       if (!test_and_clear_bit(MC_SUSPEND_EVENT_MASK,
+                               &vosSchedContext->mcEventFlag))
+       {
+           VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
+                     "%s: MC Thread: will still suspend", __func__);
+           goto mc_suspend;
+       }
 
        /* Indicate Rx Thread to Resume */
        complete(&vosSchedContext->ResumeRxEvent);
@@ -222,6 +250,7 @@ static int wlan_suspend(hdd_context_t* pHddCtx)
        return -ETIME;
    }
 
+mc_suspend:
    /* Set the Mc Thread as Suspended */
    pHddCtx->isMcThreadSuspended = TRUE;
    
@@ -462,8 +491,8 @@ void hddDevTmTxBlockTimeoutHandler(void *usrData)
 
    /* Resume TX flow */
     
-   netif_tx_start_all_queues(staAdapater->dev);
-
+   netif_tx_wake_all_queues(staAdapater->dev);
+   pHddCtx->tmInfo.qBlocked = VOS_FALSE;
    mutex_unlock(&pHddCtx->tmInfo.tmOperationLock);
 
    return;
@@ -500,6 +529,16 @@ void hddDevTmLevelChangedHandler(struct device *dev, int changedTmLevel)
       return;
    }
 
+   /* Only STA mode support TM now
+    * all other mode, TM feature should be disabled */
+   if (~VOS_STA & pHddCtx->concurrency_mode)
+   {
+      VOS_TRACE(VOS_MODULE_ID_HDD,VOS_TRACE_LEVEL_ERROR,
+                "%s: CMODE 0x%x, TM disable",
+                __func__, pHddCtx->concurrency_mode);
+      newTmLevel = WLAN_HDD_TM_LEVEL_0;
+   }
+
    if ((newTmLevel < WLAN_HDD_TM_LEVEL_0) ||
        (newTmLevel >= WLAN_HDD_TM_LEVEL_MAX))
    {
@@ -509,8 +548,8 @@ void hddDevTmLevelChangedHandler(struct device *dev, int changedTmLevel)
       return;
    }
 
-   if (changedTmLevel != WLAN_HDD_TM_LEVEL_4)
-      sme_SetTmLevel(pHddCtx->hHal, changedTmLevel, 0);
+   if (newTmLevel != WLAN_HDD_TM_LEVEL_4)
+      sme_SetTmLevel(pHddCtx->hHal, newTmLevel, 0);
 
    if (mutex_lock_interruptible(&pHddCtx->tmInfo.tmOperationLock))
    {
@@ -519,7 +558,7 @@ void hddDevTmLevelChangedHandler(struct device *dev, int changedTmLevel)
       return;
    }
 
-   pHddCtx->tmInfo.currentTmLevel = changedTmLevel;
+   pHddCtx->tmInfo.currentTmLevel = newTmLevel;
    pHddCtx->tmInfo.txFrameCount = 0;
    vos_mem_copy(&pHddCtx->tmInfo.tmAction,
                 &thermalMigrationAction[newTmLevel],
@@ -575,7 +614,7 @@ VOS_STATUS hddDevTmRegisterNotifyCallback(hdd_context_t *pHddCtx)
    mutex_init(&pHddCtx->tmInfo.tmOperationLock);
    pHddCtx->tmInfo.txFrameCount = 0;
    pHddCtx->tmInfo.blockedQueue = NULL;
-
+   pHddCtx->tmInfo.qBlocked     = VOS_FALSE;
    return VOS_STATUS_SUCCESS;
 }
 

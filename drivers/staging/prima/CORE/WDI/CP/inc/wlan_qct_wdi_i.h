@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2013 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -18,26 +18,14 @@
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
  */
+
 /*
- * Copyright (c) 2012, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2013 Qualcomm Atheros, Inc.
+ * All Rights Reserved.
+ * Qualcomm Atheros Confidential and Proprietary.
  *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
- *
- * Permission to use, copy, modify, and/or distribute this software for
- * any purpose with or without fee is hereby granted, provided that the
- * above copyright notice and this permission notice appear in all
- * copies.
- *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
- * WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
- * AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL
- * DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR
- * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
- * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
- * PERFORMANCE OF THIS SOFTWARE.
  */
+
 
 #ifndef WLAN_QCT_WDI_I_H
 #define WLAN_QCT_WDI_I_H
@@ -51,11 +39,7 @@
                    
 DESCRIPTION
   This file contains the internal API exposed by the DAL Control Path Core 
-  module to be used by the DAL Data Path Core. 
-  
-      
-  Copyright (c) 2010 QUALCOMM Incorporated. All Rights Reserved.
-  Qualcomm Confidential and Proprietary
+  module to be used by the DAL Data Path Core.
 ===========================================================================*/
 
 
@@ -445,6 +429,38 @@ typedef enum
   /*WLAN DAL Set Tx Power Request*/
   WDI_SET_TX_POWER_REQ                          = 82,
   WDI_ROAM_SCAN_OFFLOAD_REQ                     = 83,
+
+  WDI_TDLS_LINK_ESTABLISH_REQ                   = 84,
+
+  /* WLAN FW LPHB config request */
+  WDI_LPHB_CFG_REQ                              = 85,
+
+  /* WLAN FW set batch scan request */
+  WDI_SET_BATCH_SCAN_REQ                        = 86,
+
+  /*WLAN DAL Set Max Tx Power Per band Request*/
+  WDI_SET_MAX_TX_POWER_PER_BAND_REQ             = 87,
+
+  WDI_UPDATE_CHAN_REQ                           = 88,
+
+  WDI_GET_BCN_MISS_RATE_REQ                     = 89,
+
+#ifdef WLAN_FEATURE_LINK_LAYER_STATS
+  WDI_LL_STATS_SET_REQ                          = 90,
+  WDI_LL_STATS_GET_REQ                          = 91,
+  WDI_LL_STATS_CLEAR_REQ                        = 92,
+#endif
+
+#ifdef WLAN_FEATURE_EXTSCAN
+  WDI_EXTSCAN_START_REQ                          = 93,
+  WDI_EXTSCAN_STOP_REQ                           = 94,
+  WDI_EXTSCAN_GET_CACHED_RESULTS_REQ             = 95,
+  WDI_EXTSCAN_GET_CAPABILITIES_REQ               = 96,
+  WDI_EXTSCAN_SET_BSSID_HOTLIST_REQ              = 97,
+  WDI_EXTSCAN_RESET_BSSID_HOTLIST_REQ            = 98,
+  WDI_EXTSCAN_SET_SIGNF_RSSI_CHANGE_REQ          = 99,
+  WDI_EXTSCAN_RESET_SIGNF_RSSI_CHANGE_REQ        = 100,
+#endif
   WDI_MAX_REQ,
 
   /*Send a suspend Indication down to HAL*/
@@ -453,11 +469,40 @@ typedef enum
   /* Send a traffic stats indication to HAL */
   WDI_TRAFFIC_STATS_IND,
 
+  /* DHCP Start Indication */
+  WDI_DHCP_START_IND,
+
+  /* DHCP Stop Indication */
+  WDI_DHCP_STOP_IND,
+
+  /* Drop/Receive unencrypted frames indication to HAL */
+  WDI_EXCLUDE_UNENCRYPTED_IND,
+
+  /* Send an add periodic Tx pattern indication to HAL */
+  WDI_ADD_PERIODIC_TX_PATTERN_IND,
+
+  /* Send a delete periodic Tx pattern indicationto HAL */
+  WDI_DEL_PERIODIC_TX_PATTERN_IND,
+
+  /*Send stop batch scan indication to FW*/
+  WDI_STOP_BATCH_SCAN_IND,
+
+  /*Send stop batch scan indication to FW*/
+  WDI_TRIGGER_BATCH_SCAN_RESULT_IND,
+
+  /* Send Rate Update Indication */
+  WDI_RATE_UPDATE_IND,
+
+  WDI_START_HT40_OBSS_SCAN_IND,
+  WDI_STOP_HT40_OBSS_SCAN_IND,
+
+  /* csa channel switch req*/
+  WDI_CH_SWITCH_REQ_V1,
+
   /*Keep adding the indications to the max request
     such that we keep them sepparate */
-
   WDI_MAX_UMAC_IND
-}WDI_RequestEnumType; 
+}WDI_RequestEnumType;
 
 /*--------------------------------------------------------------------------- 
    WLAN DAL Supported Response Types
@@ -708,6 +753,37 @@ typedef enum
 
   WDI_SET_TX_POWER_RESP                         = 81,
   WDI_ROAM_SCAN_OFFLOAD_RESP                    = 82,
+
+  WDI_TDLS_LINK_ESTABLISH_REQ_RESP              = 83,
+
+  /* WLAN FW LPHB Config response */
+  WDI_LPHB_CFG_RESP                             = 84,
+
+  WDI_SET_BATCH_SCAN_RESP                       = 85,
+
+  WDI_SET_MAX_TX_POWER_PER_BAND_RSP             = 86,
+
+  WDI_UPDATE_CHAN_RESP                          = 87,
+  /* channel switch resp v1*/
+  WDI_CH_SWITCH_RESP_V1                         = 88,
+
+  WDI_GET_BCN_MISS_RATE_RSP                     = 89,
+#ifdef WLAN_FEATURE_LINK_LAYER_STATS
+  WDI_LL_STATS_SET_RSP                          = 90,
+  WDI_LL_STATS_GET_RSP                          = 91,
+  WDI_LL_STATS_CLEAR_RSP                        = 92,
+#endif
+
+#ifdef WLAN_FEATURE_EXTSCAN
+  WDI_EXTSCAN_START_RSP                          = 95,
+  WDI_EXTSCAN_STOP_RSP                           = 96,
+  WDI_EXTSCAN_GET_CACHED_RESULTS_RSP             = 97,
+  WDI_EXTSCAN_GET_CAPABILITIES_RSP               = 98,
+  WDI_EXTSCAN_SET_HOTLIST_BSSID_RSP              = 99,
+  WDI_EXTSCAN_RESET_HOTLIST_BSSID_RSP            = 100,
+  WDI_EXTSCAN_SET_SIGNF_RSSI_CHANGE_RSP          = 101,
+  WDI_EXTSCAN_RESET_SIGNF_RSSI_CHANGE_RSP        = 102,
+#endif
   /*-------------------------------------------------------------------------
     Indications
      !! Keep these last in the enum if possible
@@ -755,6 +831,35 @@ typedef enum
   /* NOA Start Indication from FW to Host */
   WDI_HAL_P2P_NOA_START_IND            = WDI_HAL_IND_MIN + 12,
 
+  /* TDLS Indication from FW to Host */
+  WDI_HAL_TDLS_IND                     = WDI_HAL_IND_MIN + 13,
+
+  /* LPHB timeout indication */
+  WDI_HAL_LPHB_IND                     = WDI_HAL_IND_MIN + 14,
+
+  /* IBSS Peer Inactivity Indication from FW to Host */
+  WDI_HAL_IBSS_PEER_INACTIVITY_IND     = WDI_HAL_IND_MIN + 15,
+
+  /* Periodic Tx Pattern Indication from FW to Host */
+  WDI_HAL_PERIODIC_TX_PTRN_FW_IND     = WDI_HAL_IND_MIN + 16,
+
+
+  WDI_BATCHSCAN_RESULT_IND           =  WDI_HAL_IND_MIN + 17,
+
+  WDI_HAL_CH_AVOID_IND                 = WDI_HAL_IND_MIN + 18,
+
+  /* print register values indication from FW to Host */
+  WDI_PRINT_REG_INFO_IND               = WDI_HAL_IND_MIN + 19,
+#ifdef WLAN_FEATURE_LINK_LAYER_STATS
+  WDI_HAL_LL_STATS_RESULTS_IND         = WDI_HAL_IND_MIN + 20,
+#endif
+#ifdef WLAN_FEATURE_EXTSCAN
+  WDI_HAL_EXTSCAN_PROGRESS_IND       = WDI_HAL_IND_MIN + 23,
+  WDI_HAL_EXTSCAN_SCAN_AVAILABLE_IND = WDI_HAL_IND_MIN + 24,
+  WDI_HAL_EXTSCAN_RESULT_IND         = WDI_HAL_IND_MIN + 25,
+  WDI_HAL_EXTSCAN_BSSID_HOTLIST_RESULT_IND    = WDI_HAL_IND_MIN + 26,
+  WDI_HAL_EXTSCAN_SIG_RSSI_RESULT_IND         = WDI_HAL_IND_MIN + 27,
+#endif
   WDI_MAX_RESP
 }WDI_ResponseEnumType; 
 
@@ -1059,6 +1164,8 @@ typedef struct
   DXE when DXE wakes up from power save*/
   unsigned int                dxePhyAddr;
 
+  wpt_boolean                 dxeRingsEmpty;
+
   /*NV download request parameters  */
   WDI_NvDownloadReqParamsType   wdiCachedNvDownloadReq;
 
@@ -1088,6 +1195,16 @@ typedef struct
 
   /* enable/disable SSR on WDI timeout */
   wpt_boolean                 bEnableSSR;
+
+  /* timestamp derived from msm arch counter. */
+  /*timestamp when we start response timer*/
+  wpt_uint64                  uArchTimeStampRspTmrStart;
+
+  /*timestamp when we get response timer event*/
+  wpt_uint64                  uArchTimeStampRspTmrExp;
+
+  /* reason for WDI_DetectedDeviceError */
+  void *                        DeviceErrorReason;
 }WDI_ControlBlockType; 
 
 
@@ -1921,7 +2038,7 @@ WDI_ProcessDelBAReq
   WDI_EventInfoType*     pEventData
 );
 
-#ifdef FEATURE_WLAN_CCX
+#ifdef FEATURE_WLAN_ESE
 /**
  @brief Process TSM Stats Request function (called when Main FSM
         allows it)
@@ -1956,6 +2073,24 @@ WDI_ProcessChannelSwitchReq
   WDI_ControlBlockType*  pWDICtx,
   WDI_EventInfoType*     pEventData
 );
+
+/**
+ @brief Process Channel Switch Request function (called when
+        Main FSM allows it)
+
+ @param  pWDICtx:         pointer to the WLAN DAL context
+         pEventData:      pointer to the event information structure
+
+ @see
+ @return Result of the function call
+*/
+
+WDI_Status WDI_ProcessChannelSwitchReq_V1
+(
+  WDI_ControlBlockType*  pWDICtx,
+  WDI_EventInfoType*     pEventData
+);
+
 
 /**
  @brief Process Config STA Request function (called when Main FSM 
@@ -2010,7 +2145,7 @@ WDI_ProcessGetStatsReq
   WDI_EventInfoType*     pEventData
 );
 
-#if defined WLAN_FEATURE_VOWIFI_11R || defined FEATURE_WLAN_CCX || defined(FEATURE_WLAN_LFR)
+#if defined WLAN_FEATURE_VOWIFI_11R || defined FEATURE_WLAN_ESE || defined(FEATURE_WLAN_LFR)
 /**
  @brief Process Get Roam rssi Request function (called when Main FSM
         allows it)
@@ -2184,6 +2319,22 @@ WDI_Status WDI_ProcessSetMaxTxPowerReq
 );
 
 /**
+ @brief Process Set Max Tx Power Per Band Request function (called when Main
+        FSM allows it)
+
+ @param  pWDICtx:         pointer to the WLAN DAL context
+         pEventData:      pointer to the event information structure
+
+ @see
+ @return Result of the function call
+*/
+WDI_Status WDI_ProcessSetMaxTxPowerPerBandReq
+(
+  WDI_ControlBlockType*  pWDICtx,
+  WDI_EventInfoType*     pEventData
+);
+
+/**
  @brief Process Set Tx Power Request function (called when Main
         FSM allows it)
 
@@ -2212,6 +2363,23 @@ WDI_Status WDI_ProcessSetTxPowerReq
 WDI_Status
 WDI_ProcessP2PGONOAReq
 ( 
+  WDI_ControlBlockType*  pWDICtx,
+  WDI_EventInfoType*     pEventData
+);
+
+/**
+ @brief Process TDLS Link Establish Request function (called when Main FSM
+        allows it)
+
+ @param  pWDICtx:         pointer to the WLAN DAL context
+         pEventData:      pointer to the event information structure
+
+ @see
+ @return Result of the function call
+*/
+WDI_Status
+WDI_ProcessTdlsLinkEstablishReq
+(
   WDI_ControlBlockType*  pWDICtx,
   WDI_EventInfoType*     pEventData
 );
@@ -2693,6 +2861,75 @@ WDI_ProcessSetTmLevelReq
   WDI_EventInfoType*     pEventData
 );
 
+#ifdef FEATURE_WLAN_LPHB
+/**
+ @brief WDI_ProcessLPHBConfReq -
+    LPHB configuration request to FW
+
+ @param  pWDICtx : wdi context
+         pEventData : indication data
+
+ @see
+ @return esult of the function call
+*/
+WDI_Status WDI_ProcessLPHBConfReq
+(
+  WDI_ControlBlockType*  pWDICtx,
+  WDI_EventInfoType*     pEventData
+);
+#endif /* FEATURE_WLAN_LPHB */
+
+/**
+ @brief WDI_ProcessUpdateChannelParamsReq -
+    Send update channel request to FW
+
+ @param  pWDICtx : wdi context
+         pEventData : indication data
+
+ @see
+ @return success or failure
+*/
+WDI_Status WDI_ProcessUpdateChannelParamsReq
+(
+  WDI_ControlBlockType*  pWDICtx,
+  WDI_EventInfoType*     pEventData
+);
+
+#ifdef FEATURE_WLAN_BATCH_SCAN
+/**
+ @brief WDI_ProcessSetBatchScanReq -
+    Send set batch scan configuration request to FW
+
+ @param  pWDICtx : wdi context
+         pEventData : indication data
+
+ @see
+ @return success or failure
+*/
+WDI_Status WDI_ProcessSetBatchScanReq
+(
+  WDI_ControlBlockType*  pWDICtx,
+  WDI_EventInfoType*     pEventData
+);
+
+/**
+ @brief WDI_ProcessGetBatchScanReq -
+    Send get batch scan request to FW
+
+ @param  pWDICtx : wdi context
+         pEventData : indication data
+
+ @see
+ @return success or failure
+*/
+WDI_Status WDI_ProcessGetBatchScanReq
+(
+  WDI_ControlBlockType*  pWDICtx,
+  WDI_EventInfoType*     pEventData
+);
+#endif /* FEATURE_WLAN_BATCH_SCAN */
+
+
 /*=========================================================================
                              Indications
 =========================================================================*/
@@ -2713,6 +2950,38 @@ WDI_ProcessHostSuspendInd
   WDI_EventInfoType*     pEventData
 );
 
+/**
+ @brief DHCP Start Event Indication
+
+ @param  pWDICtx:         pointer to the WLAN DAL context
+         pEventData:      pointer to the event information structure
+
+ @see
+ @return Result of the function call
+*/
+WDI_Status
+WDI_ProcessDHCPStartInd
+(
+  WDI_ControlBlockType*  pWDICtx,
+  WDI_EventInfoType*     pEventData
+);
+
+/**
+ @brief DHCP Stop Event Indication
+
+ @param  pWDICtx:         pointer to the WLAN DAL context
+         pEventData:      pointer to the event information structure
+
+ @see
+ @return Result of the function call
+*/
+WDI_Status
+WDI_ProcessDHCPStopInd
+(
+  WDI_ControlBlockType*  pWDICtx,
+  WDI_EventInfoType*     pEventData
+);
+
 
 /**
  @brief Process Traffic Stats Indications function (called when Main FSM allows it)
@@ -2729,6 +2998,123 @@ WDI_ProcessTrafficStatsInd
   WDI_ControlBlockType*  pWDICtx,
   WDI_EventInfoType*     pEventData
 );
+
+#ifdef WLAN_FEATURE_11W
+/**
+ @brief Process Exclude Unencrypted Indications function (called
+        when Main FSM allows it)
+
+ @param  pWDICtx:         pointer to the WLAN DAL context
+              pEventData:      pointer to the event information structure
+
+ @see
+ @return Result of the function call
+*/
+WDI_Status
+WDI_ProcessExcludeUnencryptInd
+(
+  WDI_ControlBlockType*  pWDICtx,
+  WDI_EventInfoType*     pEventData
+);
+#endif
+
+/**
+ @brief Process Add Periodic Tx Pattern Indication function (called when
+           Main FSM allows it)
+
+ @param  pWDICtx:        pointer to the WLAN DAL context
+         pEventData:     pointer to the event information structure
+
+ @see
+ @return Result of the function call
+*/
+WDI_Status
+WDI_ProcessAddPeriodicTxPtrnInd
+(
+  WDI_ControlBlockType*  pWDICtx,
+  WDI_EventInfoType*     pEventData
+);
+
+/**
+ @brief Process Delete Periodic Tx Pattern Indication function (called when
+           Main FSM allows it)
+
+ @param  pWDICtx:        pointer to the WLAN DAL context
+         pEventData:     pointer to the event information structure
+
+ @see
+ @return Result of the function call
+*/
+WDI_Status
+WDI_ProcessDelPeriodicTxPtrnInd
+(
+  WDI_ControlBlockType*  pWDICtx,
+  WDI_EventInfoType*     pEventData
+);
+
+#ifdef FEATURE_WLAN_BATCH_SCAN
+/**
+  @brief Process stop batch scan indications function
+         It is called when Main FSM allows it
+
+  @param  pWDICtx:         pointer to the WLAN DAL context
+          pEventData:      pointer to the event information structure
+
+  @see
+  @return Result of the function call
+ */
+ WDI_Status
+ WDI_ProcessStopBatchScanInd
+ (
+   WDI_ControlBlockType*  pWDICtx,
+   WDI_EventInfoType*     pEventData
+ );
+
+/**
+  @brief This API is called to trigger batch scan results from FW
+         It is called when Main FSM allows it
+
+  @param  pWDICtx:         pointer to the WLAN DAL context
+          pEventData:      pointer to the event information structure
+
+  @see
+  @return Result of the function call
+ */
+ WDI_Status
+ WDI_ProcessTriggerBatchScanResultInd
+ (
+   WDI_ControlBlockType*  pWDICtx,
+   WDI_EventInfoType*     pEventData
+ );
+
+#endif
+/**
+ @brief Process start OBSS scan request from Host
+
+ @param  pWDICtx:         pointer to the WLAN DAL context
+         pEventData:      pointer to the event information structure
+
+ @see
+ @return Result of the function call
+*/
+WDI_Status
+WDI_ProcessHT40OBSSScanInd(
+  WDI_ControlBlockType*  pWDICtx,  WDI_EventInfoType*   pEventData );
+
+
+/**
+ @brief Process stop OBSS scan request from Host
+
+ @param  pWDICtx:         pointer to the WLAN DAL context
+         pEventData:      pointer to the event information structure
+
+ @see
+ @return Result of the function call
+*/
+WDI_Status
+WDI_ProcessHT40OBSSStopScanInd(
+  WDI_ControlBlockType*  pWDICtx,  WDI_EventInfoType*   pEventData );
+
 /*========================================================================
           Main DAL Control Path Response Processing API 
 ========================================================================*/
@@ -3156,7 +3542,7 @@ WDI_ProcessDelBARsp
   WDI_EventInfoType*     pEventData
 );
 
-#ifdef FEATURE_WLAN_CCX
+#ifdef FEATURE_WLAN_ESE
 /**
  @brief Process TSM stats Rsp function (called when a response
         is being received over the bus from HAL)
@@ -3194,6 +3580,22 @@ WDI_ProcessChannelSwitchRsp
   WDI_EventInfoType*     pEventData
 );
 
+/**
+ @brief Process Channel Switch Rsp function (called when a response
+        is being received over the bus from HAL)
+
+ @param  pWDICtx:         pointer to the WLAN DAL context
+         pEventData:      pointer to the event information structure
+
+ @see
+ @return Result of the function call
+*/
+WDI_Status
+WDI_ProcessChannelSwitchRsp_V1
+(
+  WDI_ControlBlockType*  pWDICtx,
+  WDI_EventInfoType*     pEventData
+);
 
 /**
  @brief Process Config STA Rsp function (called when a response
@@ -3226,6 +3628,23 @@ WDI_ProcessConfigStaRsp
 WDI_Status
 WDI_ProcessSetLinkStateRsp
 ( 
+  WDI_ControlBlockType*  pWDICtx,
+  WDI_EventInfoType*     pEventData
+);
+
+/**
+ @brief Process Update Channel Rsp function (called when a response is
+        being received over the bus from HAL)
+
+ @param  pWDICtx:         pointer to the WLAN DAL context
+         pEventData:      pointer to the event information structure
+
+ @see
+ @return Result of the function call
+*/
+WDI_Status
+WDI_ProcessUpdateChanRsp
+(
   WDI_ControlBlockType*  pWDICtx,
   WDI_EventInfoType*     pEventData
 );
@@ -3366,6 +3785,23 @@ WDI_ProcessSetMaxTxPowerRsp
   WDI_EventInfoType*             pEventData
 );
 
+/**
+ @brief Process Set Max Tx Power Per Band Rsp function (called when a response
+        is being received over the bus from HAL)
+
+ @param  pWDICtx:         pointer to the WLAN DAL context
+         pEventData:      pointer to the event information structure
+
+ @see
+ @return Result of the function call
+*/
+WDI_Status
+WDI_ProcessSetMaxTxPowerPerBandRsp
+(
+  WDI_ControlBlockType*          pWDICtx,
+  WDI_EventInfoType*             pEventData
+);
+
   /**
  @brief Process Set Tx Power Rsp function (called when a response
         is being received over the bus from HAL)
@@ -3378,6 +3814,23 @@ WDI_ProcessSetMaxTxPowerRsp
 */
 WDI_Status
 WDI_ProcessSetTxPowerRsp
+(
+  WDI_ControlBlockType*          pWDICtx,
+  WDI_EventInfoType*             pEventData
+);
+
+  /**
+ @brief Process TDLS Link Establish Req Rsp function (called when a response
+        is being received over the bus from HAL)
+
+ @param  pWDICtx:         pointer to the WLAN DAL context
+         pEventData:      pointer to the event information structure
+
+ @see
+ @return Result of the function call
+*/
+WDI_Status
+WDI_ProcessLinkEstablishReqRsp
 (
   WDI_ControlBlockType*          pWDICtx,
   WDI_EventInfoType*             pEventData
@@ -4046,6 +4499,24 @@ WDI_ProcessTxCompleteInd
 );
 
 /**
+*@brief Process Tdls Indication function (called when
+        an indication of this kind is being received over the
+        bus from HAL)
+
+ @param  pWDICtx:         pointer to the WLAN DAL context
+         pEventData:      pointer to the event information structure
+
+ @see
+ @return Result of the function call
+*/
+WDI_Status
+WDI_ProcessTdlsInd
+(
+  WDI_ControlBlockType*  pWDICtx,
+  WDI_EventInfoType*     pEventData
+);
+
+/**
 *@brief Process Noa Start Indication function (called when
         an indication of this kind is being received over the
         bus from HAL)
@@ -4095,6 +4566,42 @@ WDI_ProcessP2pNoaAttrInd
 WDI_Status
 WDI_ProcessTxPerHitInd
 ( 
+  WDI_ControlBlockType*  pWDICtx,
+  WDI_EventInfoType*     pEventData
+);
+
+#ifdef FEATURE_WLAN_LPHB
+/**
+ @brief WDI_ProcessLphbInd -
+    This function will be invoked when FW detects low power
+    heart beat failure
+
+ @param  pWDICtx : wdi context
+         pEventData : indication data
+
+ @see
+ @return Result of the function call
+*/
+WDI_Status
+WDI_ProcessLphbInd
+(
+  WDI_ControlBlockType*  pWDICtx,
+  WDI_EventInfoType*     pEventData
+);
+#endif /* FEATURE_WLAN_LPHB */
+
+/**
+ @brief Process Periodic Tx Pattern Fw Indication function
+
+ @param  pWDICtx:        pointer to the WLAN DAL context
+         pEventData:     pointer to the event information structure
+
+ @see
+ @return Result of the function call
+*/
+WDI_Status
+WDI_ProcessPeriodicTxPtrnFwInd
+(
   WDI_ControlBlockType*  pWDICtx,
   WDI_EventInfoType*     pEventData
 );
@@ -4202,6 +4709,26 @@ WDI_ProcessHALDumpCmdRsp
   WDI_ControlBlockType*  pWDICtx,
   WDI_EventInfoType*     pEventData
 );
+
+/**
+ @brief WDI_ProcessIbssPeerInactivityInd
+        Process peer inactivity indication coming from HAL.
+
+  @param  pWDICtx:         pointer to the WLAN DAL context
+          pEventData:      pointer to the event information structure
+
+  @see
+  @return Result of the function call
+*/
+WDI_Status
+WDI_ProcessIbssPeerInactivityInd
+
+(
+ WDI_ControlBlockType*  pWDICtx,
+  WDI_EventInfoType*     pEventData
+);
+
+
 /*========================================================================
          Internal Helper Routines 
 ========================================================================*/
@@ -4576,19 +5103,24 @@ WDI_FindEmptySession
 );
 
 /**
- @brief Helper routine used to get the total count of active 
+ @brief Helper routine used to get the total count of active
         sessions
-  
- 
- @param  pWDICtx:       pointer to the WLAN DAL context 
-  
+
+
+ @param  pWDICtx:       pointer to the WLAN DAL context
+         macBSSID:      pointer to BSSID. If NULL, get all the session.
+                        If not NULL, count ActiveSession by excluding (TRUE) or including (FALSE) skipBSSID.
+         skipBSSID:     if TRUE, get all the sessions except matching to macBSSID. If FALSE, get all session.
+                        This argument is ignored if macBSSID is NULL.
  @see
  @return Number of sessions in use
 */
 wpt_uint8
 WDI_GetActiveSessionsCount
-( 
-  WDI_ControlBlockType*   pWDICtx
+(
+  WDI_ControlBlockType*   pWDICtx,
+  wpt_macAddr             macBSSID,
+  wpt_boolean             skipBSSID
 );
 
 /**
@@ -4846,6 +5378,7 @@ WDI_ProcessUpdateScanParamsRsp
 );
 #endif // FEATURE_WLAN_SCAN_PNO
 
+
 #ifdef WLAN_FEATURE_ROAM_SCAN_OFFLOAD
 /**
  @brief Process Start Roam Candidate Lookup Request function
@@ -4879,6 +5412,7 @@ WDI_ProcessRoamScanOffloadRsp
   WDI_EventInfoType*     pEventData
 );
 #endif
+
 
 #ifdef WLAN_FEATURE_PACKET_FILTERING
 /**
@@ -5133,6 +5667,7 @@ WDI_ProcessUpdateVHTOpModeRsp
   WDI_EventInfoType*     pEventData
 );
 #endif
+
 #ifdef WLAN_FEATURE_ROAM_SCAN_OFFLOAD
 /**
  *  @brief WDI_wdiEdTypeEncToEdTypeEnc -
@@ -5150,6 +5685,321 @@ WDI_wdiEdTypeEncToEdTypeEnc
  WDI_EdType wdiEdType
 );
 #endif
+
+#ifdef FEATURE_WLAN_LPHB
+/**
+ @brief WDI_ProcessLphbCfgRsp -
+    LPHB configuration response from FW
+
+ @param  pWDICtx : wdi context
+         pEventData : indication data
+
+ @see
+ @return Result of the function call
+*/
+WDI_Status WDI_ProcessLphbCfgRsp
+(
+  WDI_ControlBlockType*  pWDICtx,
+  WDI_EventInfoType*     pEventData
+);
+#endif /* FEATURE_WLAN_LPHB */
+
+/**
+ @brief Process Rate Update Indication and post it to HAL
+
+ @param  pWDICtx:    pointer to the WLAN DAL context
+         pEventData: pointer to the event information structure
+
+ @see
+ @return Result of the function call
+*/
+WDI_Status
+WDI_ProcessRateUpdateInd
+(
+    WDI_ControlBlockType*  pWDICtx,
+    WDI_EventInfoType*     pEventData
+);
+
+#ifdef FEATURE_WLAN_BATCH_SCAN
+/**
+ @brief WDI_ProcessSetBatchScanRsp -
+     Process set batch scan response from FW
+
+ @param  pWDICtx : wdi context
+         pEventData : indication data
+
+ @see
+ @return Result of the function call
+*/
+WDI_Status WDI_ProcessSetBatchScanRsp
+(
+  WDI_ControlBlockType*  pWDICtx,
+  WDI_EventInfoType*     pEventData
+);
+
+WDI_Status
+WDI_ProcessGetBcnMissRateReq
+(
+  WDI_ControlBlockType*  pWDICtx,
+  WDI_EventInfoType*     pEventData
+);
+
+WDI_Status
+WDI_ProcessGetBcnMissRateRsp
+(
+  WDI_ControlBlockType*  pWDICtx,
+  WDI_EventInfoType*     pEventData
+);
+
+/**
+ @brief Process batch scan response from FW
+
+ @param  pWDICtx:        pointer to the WLAN DAL context
+         pEventData:     pointer to the event information structure
+
+ @see
+ @return Result of the function call
+*/
+WDI_Status
+WDI_ProcessBatchScanResultInd
+(
+  WDI_ControlBlockType*  pWDICtx,
+  WDI_EventInfoType*     pEventData
+);
+
+#endif /* FEATURE_WLAN_BATCH_SCAN */
+
+#ifdef FEATURE_WLAN_CH_AVOID
+/**
+ @brief v -
+
+
+ @param  pWDICtx : wdi context
+         pEventData : indication data
+ @see
+ @return Result of the function call
+*/
+WDI_Status
+WDI_ProcessChAvoidInd
+(
+  WDI_ControlBlockType*  pWDICtx,
+  WDI_EventInfoType*     pEventData
+);
+#endif /* FEATURE_WLAN_CH_AVOID */
+
+/**
+ @brief v -
+
+
+ @param  pWDICtx : wdi context
+         pEventData : indication data
+ @see
+ @return Result of the function call
+*/
+WDI_Status
+WDI_printRegInfo
+(
+  WDI_ControlBlockType*  pWDICtx,
+  WDI_EventInfoType*     pEventData
+);
+
+#ifdef WLAN_FEATURE_EXTSCAN
+WDI_Status
+WDI_ProcessEXTScanStartReq
+(
+   WDI_ControlBlockType*  pWDICtx,
+   WDI_EventInfoType*     pEventData
+);
+WDI_Status
+WDI_ProcessEXTScanStopReq
+(
+   WDI_ControlBlockType*  pWDICtx,
+   WDI_EventInfoType*     pEventData
+);
+WDI_Status
+WDI_ProcessEXTScanStartRsp
+(
+   WDI_ControlBlockType*  pWDICtx,
+   WDI_EventInfoType*     pEventData
+);
+WDI_Status
+WDI_ProcessEXTScanStopRsp
+(
+   WDI_ControlBlockType*  pWDICtx,
+   WDI_EventInfoType*     pEventData
+);
+
+WDI_Status
+WDI_ProcessEXTScanGetCachedResultsReq
+(
+   WDI_ControlBlockType*  pWDICtx,
+   WDI_EventInfoType*     pEventData
+);
+WDI_Status
+WDI_ProcessEXTScanGetCachedResultsRsp
+(
+   WDI_ControlBlockType*  pWDICtx,
+   WDI_EventInfoType*     pEventData
+);
+
+WDI_Status
+WDI_ProcessEXTScanProgressInd
+(
+   WDI_ControlBlockType*  pWDICtx,
+   WDI_EventInfoType*     pEventData
+);
+
+WDI_Status
+WDI_ProcessEXTScanGetCapabilitiesReq
+(
+  WDI_ControlBlockType*  pWDICtx,
+  WDI_EventInfoType*     pEventData
+);
+
+WDI_Status
+WDI_ProcessEXTScanGetCapabilitiesRsp
+(
+  WDI_ControlBlockType*  pWDICtx,
+  WDI_EventInfoType*     pEventData
+);
+
+WDI_Status
+WDI_ProcessEXTScanSetBSSIDHotlistReq
+(
+  WDI_ControlBlockType*  pWDICtx,
+  WDI_EventInfoType*     pEventData
+);
+
+WDI_Status
+WDI_ProcessEXTScanSetHotlistBSSIDRsp
+(
+  WDI_ControlBlockType*  pWDICtx,
+  WDI_EventInfoType*     pEventData
+);
+
+WDI_Status
+WDI_ProcessEXTScanResetBSSIDHotlistReq
+(
+  WDI_ControlBlockType*  pWDICtx,
+  WDI_EventInfoType*     pEventData
+);
+
+WDI_Status
+WDI_ProcessEXTScanResetHotlistBSSIDRsp
+(
+  WDI_ControlBlockType*  pWDICtx,
+  WDI_EventInfoType*     pEventData
+);
+
+WDI_Status
+WDI_ProcessEXTScanSetSignifRSSIChangeReq
+(
+  WDI_ControlBlockType*  pWDICtx,
+  WDI_EventInfoType*     pEventData
+);
+
+WDI_Status
+WDI_ProcessEXTScanSetSignfRSSIChangeRsp
+(
+  WDI_ControlBlockType*  pWDICtx,
+  WDI_EventInfoType*     pEventData
+);
+
+WDI_Status
+WDI_ProcessEXTScanResetSignfRSSIChangeReq
+(
+  WDI_ControlBlockType*  pWDICtx,
+  WDI_EventInfoType*     pEventData
+);
+
+WDI_Status
+WDI_ProcessEXTScanResetSignfRSSIChangeRsp
+(
+  WDI_ControlBlockType*  pWDICtx,
+  WDI_EventInfoType*     pEventData
+);
+
+WDI_Status
+WDI_ProcessEXTScanScanAvailableInd
+(
+   WDI_ControlBlockType*  pWDICtx,
+   WDI_EventInfoType*     pEventData
+);
+
+WDI_Status
+WDI_ProcessEXTScanResultInd
+(
+   WDI_ControlBlockType*  pWDICtx,
+   WDI_EventInfoType*     pEventData
+);
+
+WDI_Status
+WDI_ProcessEXTScanBssidHotListResultInd
+(
+   WDI_ControlBlockType*  pWDICtx,
+   WDI_EventInfoType*     pEventData
+);
+
+WDI_Status
+WDI_ProcessEXTScanSignfRssiResultInd
+(
+   WDI_ControlBlockType*  pWDICtx,
+   WDI_EventInfoType*     pEventData
+);
+
+#endif /* WLAN_FEATURE_EXTSCAN */
+
+#ifdef WLAN_FEATURE_LINK_LAYER_STATS
+WDI_Status
+WDI_ProcessLLStatsSetRsp
+(
+   WDI_ControlBlockType*  pWDICtx,
+   WDI_EventInfoType*     pEventData
+);
+
+WDI_Status
+WDI_ProcessLLStatsSetReq
+(
+   WDI_ControlBlockType*  pWDICtx,
+   WDI_EventInfoType*     pEventData
+);
+
+WDI_Status
+WDI_ProcessLLStatsGetRsp
+(
+   WDI_ControlBlockType*  pWDICtx,
+   WDI_EventInfoType*     pEventData
+);
+
+WDI_Status
+WDI_ProcessLLStatsGetReq
+(
+   WDI_ControlBlockType*  pWDICtx,
+   WDI_EventInfoType*     pEventData
+);
+
+WDI_Status
+WDI_ProcessLLStatsClearRsp
+(
+   WDI_ControlBlockType*  pWDICtx,
+   WDI_EventInfoType*     pEventData
+);
+
+WDI_Status
+WDI_ProcessLLStatsClearReq
+(
+   WDI_ControlBlockType*  pWDICtx,
+   WDI_EventInfoType*     pEventData
+);
+
+WDI_Status
+WDI_ProcessLinkLayerStatsResultsInd
+(
+   WDI_ControlBlockType*  pWDICtx,
+   WDI_EventInfoType*     pEventData
+);
+
+#endif /* WLAN_FEATURE_LINK_LAYER_STATS */
 
 #endif /*WLAN_QCT_WDI_I_H*/
 

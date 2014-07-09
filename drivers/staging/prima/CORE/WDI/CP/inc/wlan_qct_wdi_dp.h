@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2014 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -18,26 +18,14 @@
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
  */
+
 /*
- * Copyright (c) 2012, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2014 Qualcomm Atheros, Inc.
+ * All Rights Reserved.
+ * Qualcomm Atheros Confidential and Proprietary.
  *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
- *
- * Permission to use, copy, modify, and/or distribute this software for
- * any purpose with or without fee is hereby granted, provided that the
- * above copyright notice and this permission notice appear in all
- * copies.
- *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
- * WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
- * AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL
- * DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR
- * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
- * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
- * PERFORMANCE OF THIS SOFTWARE.
  */
+
 
 #ifndef WLAN_QCT_WDI_DP_H
 #define WLAN_QCT_WDI_DP_H
@@ -129,6 +117,16 @@ when        who    what, where, why
 
 #define WDI_USE_BD_RATE2_FOR_MANAGEMENT_FRAME 0x40 // Bit 6 will be used to control BD rate for Management frames
 
+#ifdef FEATURE_WLAN_TDLS
+#define HAL_TDLS_PEER_STA_MASK              0x80 //bit 7 set for TDLS peer station
+#endif
+
+/* Bit 8 is used to route reliable multicast data frames from QID 1.
+   This dynamically changes ACK_POLICY = TRUE for multicast frames */
+#define WDI_RELIABLE_MCAST_REQUESTED_MASK 0x100
+
+#define WDI_USE_BD_RATE_MASK              0x1000
+#define WDI_USE_FW_IN_TX_PATH             0x200 //bit 9 used to route the frames to Work Queue 5
 
 /*Macro for getting the size of the TX BD*/
 #define WDI_TX_BD_HEADER_SIZE        sizeof(WDI_TxBdType)
@@ -236,7 +234,6 @@ when        who    what, where, why
 
 #define WDI_RX_BD_GET_MPDU_H_LEN( _pvBDHeader )      (((WDI_RxBdType*)_pvBDHeader)->mpduHeaderLength)
 
-
 #define WDI_RX_BD_GET_FT( _pvBDHeader )         (((WDI_RxBdType*)_pvBDHeader)->ft)
 
 #define WDI_RX_BD_GET_DPU_FEEDBACK( _pvBDHeader )         (((WDI_RxBdType*)_pvBDHeader)->dpuFeedback)
@@ -276,6 +273,8 @@ when        who    what, where, why
 
 #define WDI_RX_BD_GET_TID( _pvBDHeader )        (((WDI_RxBdType*)_pvBDHeader)->tid)
 
+#define WDI_RX_BD_GET_RFBAND( _pvBDHeader )        (((WDI_RxBdType*)_pvBDHeader)->rfBand)
+
 #define WDI_RX_BD_GET_ASF( _pvBDHeader )        (((WDI_RxBdType*)_pvBDHeader)->asf)
 
 #define WDI_RX_BD_GET_AEF( _pvBDHeader )        (((WDI_RxBdType*)_pvBDHeader)->aef)
@@ -303,6 +302,9 @@ when        who    what, where, why
 //LFR scan related
 #define WDI_RX_BD_GET_OFFLOADSCANLEARN( _pvBDHeader )         (((WDI_RxBdType*)_pvBDHeader)->offloadScanLearn)
 #define WDI_RX_BD_GET_ROAMCANDIDATEIND( _pvBDHeader )         (((WDI_RxBdType*)_pvBDHeader)->roamCandidateInd)
+#endif
+#ifdef WLAN_FEATURE_EXTSCAN
+#define WDI_RX_BD_GET_EXTSCANFULLSCANRESIND( _pvBDHeader ) (((WDI_RxBdType*)_pvBDHeader)->extscanBuffer)
 #endif
 
 /*------------ RSSI and SNR Information extraction -------------*/
@@ -350,6 +352,10 @@ when        who    what, where, why
 #define WDI_RX_BD_GET_PMICMD_20TO23(_pvBDHeader)        (((WDI_RxBdType*)_pvBDHeader)->pmiCmd4to23[4])
 
 #define WDI_RX_BD_GET_PMICMD_24TO25(_pvBDHeader)        (((WDI_RxBdType*)_pvBDHeader)->pmiCmd24to25)
+
+#ifdef WLAN_FEATURE_11W
+#define WDI_RX_BD_GET_RMF( _pvBDHeader )         (((WDI_RxBdType*)_pvBDHeader)->rmf)
+#endif
 
 #define WDI_RX_BD_ASF_SET               1 /*The value of the field when set and pkt is AMSDU*/
 
@@ -399,6 +405,8 @@ WDI_RxBD_GetFrameTypeSubType
      ucDisableFrmXtl: set to 1 if this frame is not to be translated by HW
      pTxBd:          pointer to the TX BD
      ucTxFlag:       can have appropriate bit setting as required
+     ucProtMgmtFrame: for management frames, whether the frame is
+                      protected (protect bit is set in FC)
      uTimestamp:     pkt timestamp
   
   
@@ -415,8 +423,10 @@ WDI_FillTxBd
     wpt_uint8*             pTid, 
     wpt_uint8              ucDisableFrmXtl, 
     void*                  pTxBd, 
-    wpt_uint8              ucTxFlag, 
+    wpt_uint32             ucTxFlag,
+    wpt_uint8              ucProtMgmtFrame,
     wpt_uint32             uTimeStamp,
+    wpt_uint8              isEapol,
     wpt_uint8*             staIndex
 );
 

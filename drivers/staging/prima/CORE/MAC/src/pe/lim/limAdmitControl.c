@@ -1,25 +1,5 @@
 /*
- * Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
- *
- * Permission to use, copy, modify, and/or distribute this software for
- * any purpose with or without fee is hereby granted, provided that the
- * above copyright notice and this permission notice appear in all
- * copies.
- *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
- * WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
- * AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL
- * DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR
- * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
- * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
- * PERFORMANCE OF THIS SOFTWARE.
- */
-/*
- * Copyright (c) 2012, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2013 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -40,7 +20,12 @@
  */
 
 /*
- * Airgo Networks, Inc proprietary. All rights reserved.
+ * This file was originally distributed by Qualcomm Atheros, Inc.
+ * under proprietary terms before Copyright ownership was assigned
+ * to the Linux Foundation.
+ */
+
+/*
  * This file contains TSPEC and STA admit control related functions
  * NOTE: applies only to AP builds
  *
@@ -569,7 +554,7 @@ void limTspecDelete(tpAniSirGlobal pMac, tpLimTspecInfo pInfo)
         return;
         //pierre
     limLog(pMac, ADMIT_CONTROL_LOGLEVEL, FL("tspec entry = %d"), pInfo->idx);
-    limLog(pMac, ADMIT_CONTROL_LOGLEVEL, FL("delete tspec %08X"),pInfo);
+    limLog(pMac, ADMIT_CONTROL_LOGLEVEL, FL("delete tspec %p"), pInfo);
     pInfo->inuse = 0;
 
     // clear the hcca/parameterized queue indicator
@@ -609,8 +594,9 @@ limTspecFindByStaAddr(
     for (ctspec = 0; ctspec < LIM_NUM_TSPEC_MAX; ctspec++, pTspecList++)
     {
         if ((pTspecList->inuse)
-            && (palEqualMemory( pMac->hHdd,pAddr, pTspecList->staAddr, sizeof(pTspecList->staAddr)))
-            && (palEqualMemory( pMac->hHdd,(tANI_U8 *) pTspecIE, (tANI_U8 *) &pTspecList->tspec, sizeof(tSirMacTspecIE))))
+            && (vos_mem_compare(pAddr, pTspecList->staAddr, sizeof(pTspecList->staAddr)))
+            && (vos_mem_compare((tANI_U8 *) pTspecIE, (tANI_U8 *) &pTspecList->tspec,
+                                            sizeof(tSirMacTspecIE))))
         {
             *ppInfo = pTspecList;
             return eSIR_SUCCESS;
@@ -650,7 +636,8 @@ limTspecFindByAssocId(
     {
         if ((pTspecList->inuse)
             && (assocId == pTspecList->assocId)
-            && (palEqualMemory( pMac->hHdd,(tANI_U8 *) pTspecIE, (tANI_U8 *) &pTspecList->tspec, sizeof(tSirMacTspecIE))))
+            && (vos_mem_compare((tANI_U8 *)pTspecIE, (tANI_U8 *)&pTspecList->tspec,
+                sizeof(tSirMacTspecIE))))
         {
             *ppInfo = pTspecList;
             return eSIR_SUCCESS;
@@ -767,7 +754,7 @@ tSirRetStatus limTspecAdd(
     // update the tspec info
     pTspecList->tspec = *pTspec;
     pTspecList->assocId = assocId;
-    palCopyMemory( pMac->hHdd, pTspecList->staAddr, pAddr, sizeof(pTspecList->staAddr));
+    vos_mem_copy(pTspecList->staAddr, pAddr, sizeof(pTspecList->staAddr));
 
     // for edca tspec's, we are all done
     if (pTspec->tsinfo.traffic.accessPolicy == SIR_MAC_ACCESSPOLICY_EDCA)
@@ -928,7 +915,7 @@ tSirRetStatus limAdmitControlAddTS(
     // fill in a schedule if requested
     if (pSch != NULL)
     {
-        palZeroMemory( pMac->hHdd, (tANI_U8 *) pSch, sizeof(*pSch));
+        vos_mem_set((tANI_U8 *) pSch, sizeof(*pSch), 0);
         pSch->svcStartTime   = pAddts->tspec.svcStartTime;
         pSch->svcInterval    = svcInterval;
         pSch->maxSvcDuration = (tANI_U16) pSch->svcInterval; // use SP = SI
@@ -1041,7 +1028,7 @@ limAdmitControlDeleteSta(
   -------------------------------------------------------------*/
 tSirRetStatus limAdmitControlInit(tpAniSirGlobal pMac)
 {
-    palZeroMemory(pMac->hHdd, pMac->lim.tspecInfo , LIM_NUM_TSPEC_MAX * sizeof(tLimTspecInfo));
+    vos_mem_set(pMac->lim.tspecInfo, LIM_NUM_TSPEC_MAX * sizeof(tLimTspecInfo), 0);
     return eSIR_SUCCESS;
 }
 
@@ -1098,16 +1085,17 @@ limSendHalMsgAddTs(
     tSirMsgQ msg;
     tpAddTsParams pAddTsParam;
 
-    if( eHAL_STATUS_SUCCESS != palAllocateMemory( pMac->hHdd, (void **)&pAddTsParam, sizeof(tAddTsParams)))
+    pAddTsParam = vos_mem_malloc(sizeof(tAddTsParams));
+    if (NULL == pAddTsParam)
     {
-       PELOGW(limLog(pMac, LOGW, FL("palAllocateMemory() failed"));)
+       PELOGW(limLog(pMac, LOGW, FL("AllocateMemory() failed"));)
        return eSIR_MEM_ALLOC_FAILED;          
     }
 
-    palZeroMemory( pMac->hHdd, (tANI_U8 *)pAddTsParam, sizeof(tAddTsParams));
+    vos_mem_set((tANI_U8 *)pAddTsParam, sizeof(tAddTsParams), 0);
     pAddTsParam->staIdx = staIdx;
     pAddTsParam->tspecIdx = tspecIdx;
-    palCopyMemory(pMac->hHdd, &pAddTsParam->tspec, &tspecIE, sizeof(tSirMacTspecIE));
+    vos_mem_copy(&pAddTsParam->tspec, &tspecIE, sizeof(tSirMacTspecIE));
     pAddTsParam->sessionId = sessionId;
  
     msg.type = WDA_ADD_TS_REQ;
@@ -1124,7 +1112,7 @@ limSendHalMsgAddTs(
     {
        PELOGW(limLog(pMac, LOGW, FL("wdaPostCtrlMsg() failed"));)
        SET_LIM_PROCESS_DEFD_MESGS(pMac, true);
-       palFreeMemory(pMac->hHdd, (tANI_U8*)pAddTsParam);
+       vos_mem_free(pAddTsParam);
        return eSIR_FAILURE;
     }
   return eSIR_SUCCESS;
@@ -1146,25 +1134,28 @@ limSendHalMsgDelTs(
   tANI_U16       staIdx,
   tANI_U8         tspecIdx,
   tSirDeltsReqInfo delts,
-  tANI_U8        sessionId)
+  tANI_U8        sessionId,
+  tANI_U8        *bssId)
 {
   tSirMsgQ msg;
   tpDelTsParams pDelTsParam;
 
-  if( eHAL_STATUS_SUCCESS != palAllocateMemory( pMac->hHdd, (void **)&pDelTsParam, sizeof(tDelTsParams)))
+  pDelTsParam = vos_mem_malloc(sizeof(tDelTsParams));
+  if (NULL == pDelTsParam)
   {
-     limLog(pMac, LOGP, FL("palAllocateMemory() failed"));
+     limLog(pMac, LOGP, FL("AllocateMemory() failed"));
      return eSIR_MEM_ALLOC_FAILED;
   }
 
   msg.type = WDA_DEL_TS_REQ;
   msg.bodyptr = pDelTsParam;
   msg.bodyval = 0;
-  palZeroMemory( pMac->hHdd, (tANI_U8 *)pDelTsParam, sizeof(tDelTsParams));
+  vos_mem_set((tANI_U8 *)pDelTsParam, sizeof(tDelTsParams), 0);
 
   //filling message parameters.
   pDelTsParam->staIdx = staIdx;
   pDelTsParam->tspecIdx = tspecIdx;
+  vos_mem_copy(&pDelTsParam->bssId, bssId, sizeof(tSirMacAddr));
 
   PELOGW(limLog(pMac, LOGW, FL("calling wdaPostCtrlMsg()"));)
   MTRACE(macTraceMsgTx(pMac, sessionId, msg.type));
@@ -1172,7 +1163,7 @@ limSendHalMsgDelTs(
   if(eSIR_SUCCESS != wdaPostCtrlMsg(pMac, &msg))
   {
      PELOGW(limLog(pMac, LOGW, FL("wdaPostCtrlMsg() failed"));)
-     palFreeMemory(pMac->hHdd, (tANI_U8*)pDelTsParam);
+     vos_mem_free(pDelTsParam);
      return eSIR_FAILURE;
   }
   return eSIR_SUCCESS;  
@@ -1268,7 +1259,7 @@ void limProcessHalAddTsRsp(tpAniSirGlobal pMac, tpSirMsgQ limMsg)
 
 end:
     if( pAddTsRspMsg != NULL )
-        palFreeMemory( pMac->hHdd, (void *)pAddTsRspMsg );
+        vos_mem_free(pAddTsRspMsg);
     return;
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2013 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -18,25 +18,11 @@
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
  */
+
 /*
- * Copyright (c) 2012, The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
- *
- * Permission to use, copy, modify, and/or distribute this software for
- * any purpose with or without fee is hereby granted, provided that the
- * above copyright notice and this permission notice appear in all
- * copies.
- *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
- * WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
- * AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL
- * DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR
- * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
- * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
- * PERFORMANCE OF THIS SOFTWARE.
+ * This file was originally distributed by Qualcomm Atheros, Inc.
+ * under proprietary terms before Copyright ownership was assigned
+ * to the Linux Foundation.
  */
 
 /*===========================================================================
@@ -87,7 +73,7 @@
 #include "csrApi.h"
 #include "sme_Api.h"
 // SAP Internal API header file
-#include "sapInternal.h" 
+#include "sapInternal.h"
 
 /*----------------------------------------------------------------------------
  * Preprocessor Definitions and Constants
@@ -112,7 +98,7 @@
 
 /*----------------------------------------------------------------------------
  * Externalized Function Definitions
-* -------------------------------------------------------------------------*/
+ * -------------------------------------------------------------------------*/
 
 /*----------------------------------------------------------------------------
  * Function Declarations and Documentation
@@ -228,12 +214,13 @@ WLANSAP_ScanCallback
       psapContext->channel = operChannel;
     }
 
-    wlan_sap_select_cbmode(pTempHddCtx, psapContext->csrRoamProfile.phyMode,
-                           psapContext->channel);
+    sme_SelectCBMode(halHandle,
+          sapConvertSapPhyModeToCsrPhyMode(psapContext->csrRoamProfile.phyMode),
+          psapContext->channel);
 #ifdef SOFTAP_CHANNEL_RANGE
     if(psapContext->channelList != NULL)
     {
-        /* Always free up the memory for channel selection whatever 
+        /* Always free up the memory for channel selection whatever
          * the result */
         vos_mem_free(psapContext->channelList);
         psapContext->channelList = NULL;
@@ -410,8 +397,8 @@ WLANSAP_RoamCallback
         case eCSR_ROAM_SEND_ACTION_CNF:
             sapSignalHDDevent(sapContext, pCsrRoamInfo, 
                             eSAP_SEND_ACTION_CNF, 
-                            (v_PVOID_t)(( roamResult == eCSR_ROAM_RESULT_NONE) ?
-                            eSAP_STATUS_SUCCESS : eSAP_STATUS_FAILURE));
+                            (v_PVOID_t)((eSapStatus)((roamResult == eCSR_ROAM_RESULT_NONE)
+                            ? eSAP_STATUS_SUCCESS : eSAP_STATUS_FAILURE)));
             break;
 
        case eCSR_ROAM_DISCONNECT_ALL_P2P_CLIENTS:
@@ -463,24 +450,19 @@ WLANSAP_RoamCallback
                 vosStatus = sapSignalHDDevent( sapContext, pCsrRoamInfo, eSAP_STA_ASSOC_IND, (v_PVOID_t)eSAP_STATUS_SUCCESS);
                 if(!VOS_IS_STATUS_SUCCESS(vosStatus))
                 {
-                   VOS_TRACE( VOS_MODULE_ID_SAP, VOS_TRACE_LEVEL_ERROR, 
-                      "In %s, CSR roamResult = (%d) MAC"
-                      "(%02X-%02X-%02X-%02X-%02X-%02X) fail",
-                      __func__, roamResult, pCsrRoamInfo->peerMac[0],
-                      pCsrRoamInfo->peerMac[1], pCsrRoamInfo->peerMac[2],
-                      pCsrRoamInfo->peerMac[3], pCsrRoamInfo->peerMac[4],
-                      pCsrRoamInfo->peerMac[5]);
+                   VOS_TRACE(VOS_MODULE_ID_SAP, VOS_TRACE_LEVEL_ERROR,
+                             "In %s, CSR roamResult = (%d) MAC ("
+                             MAC_ADDRESS_STR") fail", __func__, roamResult,
+                             MAC_ADDR_ARRAY(pCsrRoamInfo->peerMac));
                     halStatus = eHAL_STATUS_FAILURE;
                 }
             }
             else
             {
-                VOS_TRACE( VOS_MODULE_ID_SAP, VOS_TRACE_LEVEL_WARN, 
-                   "In %s, CSR roamResult = (%d) MAC"
-                   "(%02X-%02X-%02X-%02X-%02X-%02X) not allowed",
-                   __func__, roamResult, pCsrRoamInfo->peerMac[0],
-                   pCsrRoamInfo->peerMac[1], pCsrRoamInfo->peerMac[2],
-                   pCsrRoamInfo->peerMac[3], pCsrRoamInfo->peerMac[4], pCsrRoamInfo->peerMac[5]);
+                VOS_TRACE(VOS_MODULE_ID_SAP, VOS_TRACE_LEVEL_WARN,
+                          "In %s, CSR roamResult = (%d) MAC ("
+                          MAC_ADDRESS_STR") not allowed", __func__, roamResult,
+                          MAC_ADDR_ARRAY(pCsrRoamInfo->peerMac));
                 halStatus = eHAL_STATUS_FAILURE;
             } 
 

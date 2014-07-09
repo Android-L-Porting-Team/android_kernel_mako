@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2013 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -18,25 +18,11 @@
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
  */
+
 /*
- * Copyright (c) 2012, The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
- *
- * Permission to use, copy, modify, and/or distribute this software for
- * any purpose with or without fee is hereby granted, provided that the
- * above copyright notice and this permission notice appear in all
- * copies.
- *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
- * WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
- * AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL
- * DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR
- * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
- * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
- * PERFORMANCE OF THIS SOFTWARE.
+ * This file was originally distributed by Qualcomm Atheros, Inc.
+ * under proprietary terms before Copyright ownership was assigned
+ * to the Linux Foundation.
  */
 
 #if !defined( WLAN_HDD_TX_RX_H )
@@ -47,15 +33,6 @@
   \file  wlan_hdd_tx_rx.h
 
   \brief Linux HDD Tx/RX APIs
-         Copyright 2008 (c) Qualcomm, Incorporated.
-         All Rights Reserved.
-<<<<<<< HEAD:CORE/HDD/inc/wlan_hdd_tx_rx.h
-         Qualcomm Confidential and Proprietary.
-  
-=======
-         Qualcomm Technologies Confidential and Proprietary.
-
->>>>>>> 009551c... wlan: hdd: remove obsolete "WLAN_SOFTAP_FEATURE" featurization:prima/CORE/HDD/inc/wlan_hdd_tx_rx.h
   ==========================================================================*/
 
 /*---------------------------------------------------------------------------
@@ -75,6 +52,8 @@
 #ifdef FEATURE_WLAN_WAPI
 #define HDD_ETHERTYPE_WAI                  ( 0x88b4 )
 #endif
+#define HDD_ETHERTYPE_ARP                  ( 0x0806 )
+#define HDD_ETHERTYPE_ARP_SIZE               42
 
 #define HDD_80211_HEADER_LEN      24
 #define HDD_80211_HEADER_QOS_CTL  2
@@ -89,6 +68,14 @@
 #define HDD_DEST_ADDR_OFFSET      6
 
 #define HDD_MAC_HDR_SIZE          6
+
+#define HDD_PSB_CFG_INVALID                   0xFF
+#define HDD_PSB_CHANGED                       0xFF
+#define SME_QOS_UAPSD_CFG_BK_CHANGED_MASK     0xF1
+#define SME_QOS_UAPSD_CFG_BE_CHANGED_MASK     0xF2
+#define SME_QOS_UAPSD_CFG_VI_CHANGED_MASK     0xF4
+#define SME_QOS_UAPSD_CFG_VO_CHANGED_MASK     0xF8
+
 /*--------------------------------------------------------------------------- 
   Type declarations
   -------------------------------------------------------------------------*/ 
@@ -255,6 +242,16 @@ void hdd_mon_tx_mgmt_pkt(hdd_adapter_t* pAdapter);
 void hdd_mon_tx_work_queue(struct work_struct *work);
 
 /**============================================================================
+  @brief hdd_Ibss_GetStaId() - Get the StationID using the Peer Mac address
+  @param pHddStaCtx : [in] pointer to HDD Station Context
+  pMacAddress [in]  pointer to Peer Mac address
+  staID [out]  pointer to Station Index
+  @return    : VOS_STATUS_SUCCESS/VOS_STATUS_E_FAILURE
+  ===========================================================================*/
+VOS_STATUS hdd_Ibss_GetStaId(hdd_station_ctx_t *pHddStaCtx,
+                                  v_MACADDR_t *pMacAddress, v_U8_t *staId);
+
+/**============================================================================
   @brief hdd_tx_rx_pkt_cnt_stat_timer_handler() -
                     Timer handler to check enable/disable split scan
   @param pHddStaCtx : Hdd adapter
@@ -262,4 +259,22 @@ void hdd_mon_tx_work_queue(struct work_struct *work);
   ===========================================================================*/
 void hdd_tx_rx_pkt_cnt_stat_timer_handler( void *pAdapter);
 
+/**============================================================================
+  @brief hdd_flush_ibss_tx_queues() -
+                    Flush tx queues in IBSS mode
+  @param pAdapter: Hdd adapter
+  @param STAId:    Sta index
+  @return    : VOS_STATUS_SUCCESS/VOS_STATUS_E_FAILURE
+  ===========================================================================*/
+void hdd_flush_ibss_tx_queues( hdd_adapter_t *pAdapter, v_U8_t STAId);
+
+/**=========================================================================
+  @brief hdd_wmm_acquire_access_required()-
+                   Determine whether wmm ac acquire access is required
+  @param pAdapter  : pointer to Adapter context
+  @param acType    : AC
+  @return          : void
+   ========================================================================*/
+void hdd_wmm_acquire_access_required(hdd_adapter_t *pAdapter,
+                                     WLANTL_ACEnumType acType);
 #endif    // end #if !defined( WLAN_HDD_TX_RX_H )

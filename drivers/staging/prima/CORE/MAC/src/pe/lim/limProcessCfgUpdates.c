@@ -1,25 +1,5 @@
 /*
- * Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
- *
- * Permission to use, copy, modify, and/or distribute this software for
- * any purpose with or without fee is hereby granted, provided that the
- * above copyright notice and this permission notice appear in all
- * copies.
- *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
- * WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
- * AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL
- * DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR
- * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
- * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
- * PERFORMANCE OF THIS SOFTWARE.
- */
-/*
- * Copyright (c) 2012, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2014 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -40,7 +20,12 @@
  */
 
 /*
- * Airgo Networks, Inc proprietary. All rights reserved.
+ * This file was originally distributed by Qualcomm Atheros, Inc.
+ * under proprietary terms before Copyright ownership was assigned
+ * to the Linux Foundation.
+ */
+
+/*
  * This file limProcessCfgUpdates.cc contains the utility functions
  * to handle various CFG parameter update events
  * Author:        Chandra Modumudi
@@ -154,7 +139,7 @@ void limSetCfgProtection(tpAniSirGlobal pMac, tpPESession pesessionEntry)
 
     if(( pesessionEntry != NULL ) && (pesessionEntry->limSystemRole == eLIM_AP_ROLE )){
         if (pesessionEntry->gLimProtectionControl == WNI_CFG_FORCE_POLICY_PROTECTION_DISABLE )
-            palZeroMemory( pMac->hHdd, (void *)&pesessionEntry->cfgProtection , sizeof(tCfgProtection));
+            vos_mem_set((void *)&pesessionEntry->cfgProtection, sizeof(tCfgProtection), 0);
         else{
             limLog(pMac, LOG1, FL(" frm11a = %d, from11b = %d, frm11g = %d, "
                                     "ht20 = %d, nongf = %d, lsigTxop = %d, "
@@ -184,8 +169,8 @@ void limSetCfgProtection(tpAniSirGlobal pMac, tpPESession pesessionEntry)
         return;
     }
 
-    if(pMac->lim.gLimProtectionControl == WNI_CFG_FORCE_POLICY_PROTECTION_DISABLE)
-        palZeroMemory( pMac->hHdd, (void *)&pMac->lim.cfgProtection , sizeof(tCfgProtection));
+    if (pMac->lim.gLimProtectionControl == WNI_CFG_FORCE_POLICY_PROTECTION_DISABLE)
+        vos_mem_set((void *)&pMac->lim.cfgProtection, sizeof(tCfgProtection), 0);
     else
         {
             pMac->lim.cfgProtection.fromlla = (val >> WNI_CFG_PROTECTION_ENABLED_FROM_llA) & 1;
@@ -381,7 +366,7 @@ limHandleCFGparamUpdate(tpAniSirGlobal pMac, tANI_U32 cfgId)
         status = limPostMsgApi(pMac, &msg);
 
         if (status != TX_SUCCESS)
-            PELOGE(limLog(pMac, LOGE, FL("Failed limPostMsgApi"), status);)
+            PELOGE(limLog(pMac, LOGE, FL("Failed limPostMsgApi %u"), status);)
         break;
     }
     case WNI_CFG_GREENFIELD_CAPABILITY:
@@ -556,8 +541,8 @@ limHandleCFGparamUpdate(tpAniSirGlobal pMac, tANI_U32 cfgId)
             tpSirPowerSaveCfg pPowerSaveConfig;
 
             /* Allocate and fill in power save configuration. */
-            if (palAllocateMemory(pMac->hHdd, (void **)&pPowerSaveConfig,
-                                  sizeof(tSirPowerSaveCfg)) != eHAL_STATUS_SUCCESS)
+            pPowerSaveConfig = vos_mem_malloc(sizeof(tSirPowerSaveCfg));
+            if ( NULL == pPowerSaveConfig )
             {
                 PELOGE(limLog(pMac, LOGE, FL("LIM: Cannot allocate memory for power save configuration"));)
                 break;
@@ -566,7 +551,7 @@ limHandleCFGparamUpdate(tpAniSirGlobal pMac, tANI_U32 cfgId)
             /* This context should be valid if power-save configuration message has been already dispathed 
              * during initialization process. Re-using the present configuration mask
              */
-            palCopyMemory(pMac->hHdd, pPowerSaveConfig, (tANI_U8 *)&pMac->pmm.gPmmCfg, sizeof(tSirPowerSaveCfg));
+            vos_mem_copy(pPowerSaveConfig, (tANI_U8 *)&pMac->pmm.gPmmCfg, sizeof(tSirPowerSaveCfg));
 
             if ( (pmmSendPowerSaveCfg(pMac, pPowerSaveConfig)) != eSIR_SUCCESS)
             {
@@ -623,7 +608,7 @@ limHandleCFGparamUpdate(tpAniSirGlobal pMac, tANI_U32 cfgId)
         {
             limLog(pMac, LOGW,
                 FL("BTC requested to disable all RX BA sessions"));
-            limDelAllBASessionsBtc(pMac);
+            limDelPerBssBASessionsBtc(pMac);
         }
         else
         {
@@ -677,7 +662,8 @@ limApplyConfiguration(tpAniSirGlobal pMac,tpPESession psessionEntry)
 
     limUpdateConfig(pMac,psessionEntry);
 
-    psessionEntry->shortSlotTimeSupported = limGetShortSlotFromPhyMode(pMac, psessionEntry, phyMode);
+    limGetShortSlotFromPhyMode(pMac, psessionEntry, phyMode,
+                               &psessionEntry->shortSlotTimeSupported);
 
     limSetCfgProtection(pMac, psessionEntry);    
 
@@ -704,6 +690,9 @@ limApplyConfiguration(tpAniSirGlobal pMac,tpPESession psessionEntry)
         limLog(pMac, LOGP, FL("could not retrieve WNI_CFG_SCAN_IN_POWERSAVE"));
         return;
     }
+
+    PELOG1(limLog(pMac, LOG1, FL("pMac->lim.gScanInPowersave = %hu"),
+                pMac->lim.gScanInPowersave);)
     pMac->lim.gScanInPowersave = (tANI_U8) val;
 
 } /*** end limApplyConfiguration() ***/
@@ -741,9 +730,14 @@ limUpdateConfig(tpAniSirGlobal pMac,tpPESession psessionEntry)
         limLog(pMac, LOGP, FL("cfg get short preamble failed"));
     psessionEntry->beaconParams.fShortPreamble = (val) ? 1 : 0;
 
-    if (wlan_cfgGetInt(pMac, WNI_CFG_WME_ENABLED, &val) != eSIR_SUCCESS)
-        limLog(pMac, LOGP, FL("cfg get wme enabled failed"));
-    psessionEntry->limWmeEnabled = (val) ? 1 : 0;
+    /* In STA case this parameter is filled during the join request */
+    if (psessionEntry->limSystemRole == eLIM_AP_ROLE ||
+        psessionEntry->limSystemRole == eLIM_STA_IN_IBSS_ROLE )
+    {
+        if (wlan_cfgGetInt(pMac, WNI_CFG_WME_ENABLED, &val) != eSIR_SUCCESS)
+            limLog(pMac, LOGP, FL("cfg get wme enabled failed"));
+        psessionEntry->limWmeEnabled = (val) ? 1 : 0;
+    }
 
     if (wlan_cfgGetInt(pMac, WNI_CFG_WSM_ENABLED, &val) != eSIR_SUCCESS)
         limLog(pMac, LOGP, FL("cfg get wsm enabled failed"));
@@ -754,11 +748,14 @@ limUpdateConfig(tpAniSirGlobal pMac,tpPESession psessionEntry)
         PELOGE(limLog(pMac, LOGE, FL("Can't enable WSM without WME"));)
         psessionEntry->limWsmEnabled = 0;
     }
-
-    if (wlan_cfgGetInt(pMac, WNI_CFG_QOS_ENABLED, &val) != eSIR_SUCCESS)
-        limLog(pMac, LOGP, FL("cfg get qos enabled failed"));
-    psessionEntry->limQosEnabled = (val) ? 1 : 0;
-
+    /* In STA , this parameter is filled during the join request */
+    if (psessionEntry->limSystemRole== eLIM_AP_ROLE ||
+        psessionEntry->limSystemRole == eLIM_STA_IN_IBSS_ROLE)
+    {
+        if (wlan_cfgGetInt(pMac, WNI_CFG_QOS_ENABLED, &val) != eSIR_SUCCESS)
+            limLog(pMac, LOGP, FL("cfg get qos enabled failed"));
+        psessionEntry->limQosEnabled = (val) ? 1 : 0;
+    }
     if (wlan_cfgGetInt(pMac, WNI_CFG_HCF_ENABLED, &val) != eSIR_SUCCESS)
         limLog(pMac, LOGP, FL("cfg get hcf enabled failed"));
     psessionEntry->limHcfEnabled = (val) ? 1 : 0;

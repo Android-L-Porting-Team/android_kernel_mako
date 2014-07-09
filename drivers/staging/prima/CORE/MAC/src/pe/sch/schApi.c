@@ -1,25 +1,5 @@
 /*
- * Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
- *
- * Permission to use, copy, modify, and/or distribute this software for
- * any purpose with or without fee is hereby granted, provided that the
- * above copyright notice and this permission notice appear in all
- * copies.
- *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
- * WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
- * AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL
- * DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR
- * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
- * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
- * PERFORMANCE OF THIS SOFTWARE.
- */
-/*
- * Copyright (c) 2012, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2013 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -40,8 +20,13 @@
  */
 
 /*
+ * This file was originally distributed by Qualcomm Atheros, Inc.
+ * under proprietary terms before Copyright ownership was assigned
+ * to the Linux Foundation.
+ */
+
+/*
  *
- * Airgo Networks, Inc proprietary. All rights reserved.
  * This file schApi.cc contains functions related to the API exposed
  * by scheduler module
  *
@@ -292,18 +277,17 @@ schSendStartScanRsp(tpAniSirGlobal pMac)
  */
 tSirRetStatus schSendBeaconReq( tpAniSirGlobal pMac, tANI_U8 *beaconPayload, tANI_U16 size, tpPESession psessionEntry)
 {
-    tSirMsgQ msgQ;
-    tpSendbeaconParams beaconParams = NULL;
-    tSirRetStatus retCode;
+  tSirMsgQ msgQ;
+  tpSendbeaconParams beaconParams = NULL;
+  tSirRetStatus retCode;
 
   schLog( pMac, LOG2,
-      FL( "Indicating HAL to copy the beacon template [%d bytes] to memory" ),
-      size );
+         FL( "Indicating HAL to copy the beacon template [%d bytes] to memory" ),
+         size );
 
-  if( eHAL_STATUS_SUCCESS != palAllocateMemory( pMac->hHdd,
-          (void **) &beaconParams,
-          sizeof( tSendbeaconParams )))
-    return eSIR_FAILURE;
+  beaconParams = vos_mem_malloc(sizeof(tSendbeaconParams));
+  if ( NULL == beaconParams )
+      return eSIR_FAILURE;
 
   msgQ.type = WDA_SEND_BEACON_REQ;
 
@@ -313,7 +297,7 @@ tSirRetStatus schSendBeaconReq( tpAniSirGlobal pMac, tANI_U8 *beaconPayload, tAN
   // Fill in tSendbeaconParams members
   /* Knock off all pMac global addresses */
   // limGetBssid( pMac, beaconParams->bssId);
-  palCopyMemory(pMac, beaconParams->bssId, psessionEntry->bssId, sizeof(psessionEntry->bssId));
+  vos_mem_copy(beaconParams->bssId, psessionEntry->bssId, sizeof(psessionEntry->bssId));
 
   beaconParams->timIeOffset = pMac->sch.schObject.gSchBeaconOffsetBegin;
   /* p2pIeOffset should be atleast greater than timIeOffset */
@@ -341,15 +325,16 @@ tSirRetStatus schSendBeaconReq( tpAniSirGlobal pMac, tANI_U8 *beaconPayload, tAN
   // free previous copy of the beacon
   if (psessionEntry->beacon )
   {
-    palFreeMemory(pMac->hHdd, psessionEntry->beacon);
+    vos_mem_free(psessionEntry->beacon);
   }
 
   psessionEntry->bcnLen = 0;
   psessionEntry->beacon = NULL;
 
-  if ( eHAL_STATUS_SUCCESS == palAllocateMemory( pMac->hHdd,(void **) &psessionEntry->beacon, size)) 
+  psessionEntry->beacon = vos_mem_malloc(size);
+  if ( psessionEntry->beacon != NULL )
   {
-    palCopyMemory(pMac->hHdd, psessionEntry->beacon, beaconPayload, size);
+    vos_mem_copy(psessionEntry->beacon, beaconPayload, size);
     psessionEntry->bcnLen = size;
   }
 
@@ -381,7 +366,7 @@ tSirRetStatus schSendBeaconReq( tpAniSirGlobal pMac, tANI_U8 *beaconPayload, tAN
 }
 
 tANI_U32 limSendProbeRspTemplateToHal(tpAniSirGlobal pMac,tpPESession psessionEntry
-                                    ,tANI_U32* IeBitmap)
+                                  ,tANI_U32* IeBitmap)
 {
     tSirMsgQ  msgQ;
     tANI_U8 *pFrame2Hal = pMac->sch.schObject.gSchProbeRspTemplate;
@@ -422,8 +407,8 @@ tANI_U32 limSendProbeRspTemplateToHal(tpAniSirGlobal pMac,tpPESession psessionEn
     if (addnIEPresent)
     {
         //Probe rsp IE available
-        if ( (palAllocateMemory(pMac->hHdd, (void**)&addIE,
-             WNI_CFG_PROBE_RSP_ADDNIE_DATA1_LEN )) != eHAL_STATUS_SUCCESS)
+        addIE = vos_mem_malloc(WNI_CFG_PROBE_RSP_ADDNIE_DATA1_LEN);
+        if ( NULL == addIE )
         {
              schLog(pMac, LOGE,
                  FL("Unable to get WNI_CFG_PROBE_RSP_ADDNIE_DATA1 length"));
@@ -436,7 +421,7 @@ tANI_U32 limSendProbeRspTemplateToHal(tpAniSirGlobal pMac,tpPESession psessionEn
             schLog(pMac, LOGE,
                 FL("Unable to get WNI_CFG_PROBE_RSP_ADDNIE_DATA1 length"));
 
-            palFreeMemory(pMac->hHdd, addIE);
+            vos_mem_free(addIE);
             return retCode;
         }
 
@@ -450,7 +435,7 @@ tANI_U32 limSendProbeRspTemplateToHal(tpAniSirGlobal pMac,tpPESession psessionEn
                schLog(pMac, LOGE,
                    FL("Unable to get WNI_CFG_PROBE_RSP_ADDNIE_DATA1 String"));
 
-               palFreeMemory(pMac->hHdd, addIE);
+               vos_mem_free(addIE);
                return retCode;
             }
         }
@@ -465,7 +450,7 @@ tANI_U32 limSendProbeRspTemplateToHal(tpAniSirGlobal pMac,tpPESession psessionEn
     }
 
     // Paranoia:
-    palZeroMemory( pMac->hHdd, pFrame2Hal, nBytes );
+    vos_mem_set(pFrame2Hal, nBytes, 0);
 
     // Next, we fill out the buffer descriptor:
     nSirStatus = limPopulateMacHeader( pMac, pFrame2Hal, SIR_MAC_MGMT_FRAME,
@@ -477,7 +462,7 @@ tANI_U32 limSendProbeRspTemplateToHal(tpAniSirGlobal pMac,tpPESession psessionEn
                                "tor for a Probe Response (%d)."),
                 nSirStatus );
 
-        palFreeMemory(pMac->hHdd, addIE);
+        vos_mem_free(addIE);
         return retCode;
     }
 
@@ -494,34 +479,26 @@ tANI_U32 limSendProbeRspTemplateToHal(tpAniSirGlobal pMac,tpPESession psessionEn
         schLog( pMac, LOGE, FL("Failed to pack a Probe Response (0x%08x)."),
                 nStatus );
 
-        palFreeMemory(pMac->hHdd, addIE);
+        vos_mem_free(addIE);
         return retCode;                 // allocated!
     }
     else if ( DOT11F_WARNED( nStatus ) )
     {
         schLog( pMac, LOGE, FL("There were warnings while packing a P"
-                               "robe Response (0x%08x).") );
+                               "robe Response (0x%08x)."), nStatus );
     }
 
     if (addnIEPresent)
     {
-        if (palCopyMemory ( pMac->hHdd, &pFrame2Hal[nBytes - addnIELen],
-                             &addIE[0], addnIELen) != eHAL_STATUS_SUCCESS)
-        {
-            schLog( pMac, LOGE,
-                FL("Additional Probe Rsp IE request failed while Appending "));
-
-            palFreeMemory(pMac->hHdd, addIE);
-            return retCode;
-        }
+        vos_mem_copy ( &pFrame2Hal[nBytes - addnIELen],
+                             &addIE[0], addnIELen);
     }
 
     /* free the allocated Memory */
-    palFreeMemory(pMac->hHdd, addIE);
+    vos_mem_free(addIE);
 
-    if( eHAL_STATUS_SUCCESS != palAllocateMemory( pMac->hHdd,
-                                                (void **) &pprobeRespParams,
-                                                sizeof( tSendProbeRespParams )))
+    pprobeRespParams = vos_mem_malloc(sizeof( tSendProbeRespParams ));
+    if ( NULL == pprobeRespParams )
     {
         schLog( pMac, LOGE, FL("limSendProbeRspTemplateToHal: HAL probe response params malloc failed for bytes %d"), nBytes );
     }
@@ -533,11 +510,10 @@ tANI_U32 limSendProbeRspTemplateToHal(tpAniSirGlobal pMac,tpPESession psessionEn
                             nBytes);)
         */
 
-        sirCopyMacAddr( pprobeRespParams->bssId  ,  psessionEntry->bssId);
+        sirCopyMacAddr( pprobeRespParams->bssId,  psessionEntry->bssId);
         pprobeRespParams->pProbeRespTemplate   = pFrame2Hal;
         pprobeRespParams->probeRespTemplateLen = nBytes;
-        palCopyMemory(pMac,pprobeRespParams->ucProxyProbeReqValidIEBmap,IeBitmap,
-                            (sizeof(tANI_U32) * 8));
+        vos_mem_copy(pprobeRespParams->ucProxyProbeReqValidIEBmap,IeBitmap,(sizeof(tANI_U32) * 8));
         msgQ.type     = WDA_UPDATE_PROBE_RSP_TEMPLATE_IND;
         msgQ.reserved = 0;
         msgQ.bodyptr  = pprobeRespParams;
@@ -546,8 +522,8 @@ tANI_U32 limSendProbeRspTemplateToHal(tpAniSirGlobal pMac,tpPESession psessionEn
         if( eSIR_SUCCESS != (retCode = wdaPostCtrlMsg( pMac, &msgQ )))
         {
             /* free the allocated Memory */
-            schLog( pMac,LOGE, FL("limSendProbeRspTemplateToHal: FAIL bytes %d retcode[%X]"), nBytes , retCode );
-            palFreeMemory(pMac->hHdd,pprobeRespParams);
+            schLog( pMac,LOGE, FL("limSendProbeRspTemplateToHal: FAIL bytes %d retcode[%X]"), nBytes, retCode );
+            vos_mem_free(pprobeRespParams);
         }
         else
         {

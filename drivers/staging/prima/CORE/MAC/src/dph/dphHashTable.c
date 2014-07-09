@@ -1,25 +1,5 @@
 /*
- * Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
- *
- * Permission to use, copy, modify, and/or distribute this software for
- * any purpose with or without fee is hereby granted, provided that the
- * above copyright notice and this permission notice appear in all
- * copies.
- *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
- * WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
- * AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL
- * DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR
- * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
- * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
- * PERFORMANCE OF THIS SOFTWARE.
- */
-/*
- * Copyright (c) 2012, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2013 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -40,8 +20,13 @@
  */
 
 /*
+ * This file was originally distributed by Qualcomm Atheros, Inc.
+ * under proprietary terms before Copyright ownership was assigned
+ * to the Linux Foundation.
+ */
+
+/*
  *
- * Airgo Networks, Inc proprietary. All rights reserved.
  * This file dphHashTable.cc implements the member functions of
  * DPH hash table class.
  *
@@ -273,7 +258,7 @@ tpDphHashNode dphInitStaState(tpAniSirGlobal pMac, tSirMacAddr staAddr,
     PELOG1(limLog(pMac, LOG1, FL("Assoc Id %d, Addr %08X"), assocId, pStaDs);)
 
     // Clear the STA node except for the next pointer (last 4 bytes)
-    palZeroMemory( pMac->hHdd, (tANI_U8 *) pStaDs, sizeof(tDphHashNode) - sizeof(tpDphHashNode));
+    vos_mem_set( (tANI_U8 *) pStaDs, sizeof(tDphHashNode) - sizeof(tpDphHashNode), 0);
 
     // Initialize the assocId
     pStaDs->assocId = assocId;
@@ -283,7 +268,7 @@ tpDphHashNode dphInitStaState(tpAniSirGlobal pMac, tSirMacAddr staAddr,
       pStaDs->staIndex = HAL_STA_INVALID_IDX;
 
     // Initialize STA mac address
-    palCopyMemory( pMac->hHdd, pStaDs->staAddr, staAddr, sizeof(tSirMacAddr));
+    vos_mem_copy( pStaDs->staAddr, staAddr, sizeof(tSirMacAddr));
 
     // Initialize fragmentation threshold
     if (wlan_cfgGetInt(pMac, WNI_CFG_FRAGMENTATION_THRESHOLD, &val) != eSIR_SUCCESS)

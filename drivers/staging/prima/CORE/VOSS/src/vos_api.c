@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2014 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -18,25 +18,11 @@
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
  */
+
 /*
- * Copyright (c) 2012, The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
- *
- * Permission to use, copy, modify, and/or distribute this software for
- * any purpose with or without fee is hereby granted, provided that the
- * above copyright notice and this permission notice appear in all
- * copies.
- *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
- * WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
- * AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL
- * DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR
- * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
- * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
- * PERFORMANCE OF THIS SOFTWARE.
+ * This file was originally distributed by Qualcomm Atheros, Inc.
+ * under proprietary terms before Copyright ownership was assigned
+ * to the Linux Foundation.
  */
 
 /**=========================================================================
@@ -85,6 +71,7 @@
 #include "wlan_hdd_cfg80211.h"
 
 #include "sapApi.h"
+#include "vos_trace.h"
 
 
 
@@ -106,6 +93,9 @@
 
 /* Approximate amount of time to wait for WDA to stop WDI */
 #define VOS_WDA_STOP_TIMEOUT WDA_STOP_TIMEOUT 
+
+/* Approximate amount of time to wait for WDA to issue a DUMP req */
+#define VOS_WDA_RESP_TIMEOUT WDA_STOP_TIMEOUT
 
 /*---------------------------------------------------------------------------
  * Data definitions
@@ -168,6 +158,13 @@ VOS_STATUS vos_preOpen ( v_CONTEXT_t *pVosContext )
 
    *pVosContext = gpVosContext;
 
+   /* Initialize the spinlock */
+   vos_trace_spin_lock_init();
+   /* it is the right time to initialize MTRACE structures */
+   #if defined(TRACE_RECORD)
+       vosTraceInit();
+   #endif
+
    return VOS_STATUS_SUCCESS;
 
 } /* vos_preOpen()*/
@@ -229,7 +226,7 @@ VOS_STATUS vos_preClose( v_CONTEXT_t *pVosContext )
        SYS, MAC, SME, WDA and TL.
       
   
-  \param  hddContextSize: Size of the HDD context to allocate.
+  \param  devHandle: pointer to the OS specific device handle
  
   
   \return VOS_STATUS_SUCCESS - Scheduler was successfully initialized and 
@@ -244,7 +241,7 @@ VOS_STATUS vos_preClose( v_CONTEXT_t *pVosContext )
   \sa vos_preOpen()
   
 ---------------------------------------------------------------------------*/
-VOS_STATUS vos_open( v_CONTEXT_t *pVosContext, v_SIZE_t hddContextSize )
+VOS_STATUS vos_open( v_CONTEXT_t *pVosContext, void *devHandle )
 
 {
    VOS_STATUS vStatus      = VOS_STATUS_SUCCESS;
@@ -266,6 +263,7 @@ VOS_STATUS vos_open( v_CONTEXT_t *pVosContext, v_SIZE_t hddContextSize )
 
    /* Initialize the timer module */
    vos_timer_module_init();
+
 
    /* Initialize the probe event */
    if (vos_event_init(&gpVosContext->ProbeEvent) != VOS_STATUS_SUCCESS)
@@ -329,7 +327,7 @@ VOS_STATUS vos_open( v_CONTEXT_t *pVosContext, v_SIZE_t hddContextSize )
    */
    macOpenParms.frameTransRequired = 1;
    macOpenParms.driverType         = eDRIVER_TYPE_PRODUCTION;
-   vStatus = WDA_open( gpVosContext, gpVosContext->pHDDContext, &macOpenParms );
+   vStatus = WDA_open( gpVosContext, devHandle, &macOpenParms );
 
    if (!VOS_IS_STATUS_SUCCESS(vStatus))
    {
@@ -365,7 +363,7 @@ VOS_STATUS vos_open( v_CONTEXT_t *pVosContext, v_SIZE_t hddContextSize )
       goto err_packet_close;
    }
 
-
+#ifndef CONFIG_ENABLE_LINUX_REG
    /* initialize the NV module */
    vStatus = vos_nv_open();
    if (!VOS_IS_STATUS_SUCCESS(vStatus))
@@ -375,6 +373,7 @@ VOS_STATUS vos_open( v_CONTEXT_t *pVosContext, v_SIZE_t hddContextSize )
                 "%s: Failed to initialize the NV module", __func__);
      goto err_sys_close;
    }
+#endif
 
    /* If we arrive here, both threads dispacthing messages correctly */
    
@@ -394,10 +393,6 @@ VOS_STATUS vos_open( v_CONTEXT_t *pVosContext, v_SIZE_t hddContextSize )
      VOS_ASSERT(0);
      goto err_nv_close;
    }
-/* call crda before sme_Open which will read NV and store the default country code */
-   wlan_hdd_get_crda_regd_entry(
-      ((hdd_context_t*)(gpVosContext->pHDDContext))->wiphy,
-      ((hdd_context_t*)(gpVosContext->pHDDContext))->cfg_ini);
 
    /* Now proceed to open the SME */
    vStatus = sme_Open(gpVosContext->pMACContext);
@@ -439,9 +434,13 @@ err_mac_close:
    macClose(gpVosContext->pMACContext);
 
 err_nv_close:
+
+#ifndef CONFIG_ENABLE_LINUX_REG
    vos_nv_close();
-   
-err_sys_close:   
+
+err_sys_close:
+#endif
+
    sysClose(gpVosContext);
 
 err_packet_close:
@@ -450,7 +449,7 @@ err_packet_close:
 err_wda_close:
    WDA_close(gpVosContext);
 
-err_sched_close:   
+err_sched_close:
    vos_sched_close(gpVosContext);
 
 
@@ -501,11 +500,29 @@ VOS_STATUS vos_preStart( v_CONTEXT_t vosContext )
    VOS_TRACE(VOS_MODULE_ID_SYS, VOS_TRACE_LEVEL_INFO,
              "vos prestart");
 
-   VOS_ASSERT(gpVosContext == pVosContext);
+   if (gpVosContext != pVosContext)
+   {
+      VOS_TRACE( VOS_MODULE_ID_VOSS, VOS_TRACE_LEVEL_ERROR,
+                "%s: Context mismatch", __func__);
+      VOS_ASSERT(0);
+      return VOS_STATUS_E_INVAL;
+   }
 
-   VOS_ASSERT( NULL != pVosContext->pMACContext);
+   if (pVosContext->pMACContext == NULL)
+   {
+       VOS_TRACE(VOS_MODULE_ID_VOSS, VOS_TRACE_LEVEL_ERROR,
+            "%s: MAC NULL context", __func__);
+       VOS_ASSERT(0);
+       return VOS_STATUS_E_INVAL;
+   }
 
-   VOS_ASSERT( NULL != pVosContext->pWDAContext);
+   if (pVosContext->pWDAContext == NULL)
+   {
+       VOS_TRACE(VOS_MODULE_ID_VOSS, VOS_TRACE_LEVEL_ERROR,
+          "%s: WDA NULL context", __func__);
+       VOS_ASSERT(0);
+       return VOS_STATUS_E_INVAL;
+   }
 
    /* call macPreStart */
    vStatus = macPreStart(gpVosContext->pMACContext);
@@ -543,13 +560,17 @@ VOS_STATUS vos_preStart( v_CONTEXT_t vosContext )
       if ( vStatus == VOS_STATUS_E_TIMEOUT )
       {
          VOS_TRACE( VOS_MODULE_ID_VOSS, VOS_TRACE_LEVEL_ERROR,
-          "%s: Timeout occurred before WDA complete\n", __func__);
+          "%s: Timeout occurred before WDA complete", __func__);
       }
       else
       {
          VOS_TRACE( VOS_MODULE_ID_VOSS, VOS_TRACE_LEVEL_ERROR,
            "%s: WDA_preStart reporting other error", __func__);
       }
+      VOS_TRACE( VOS_MODULE_ID_VOSS, VOS_TRACE_LEVEL_ERROR,
+           "%s: Test MC thread by posting a probe message to SYS", __func__);
+      wlan_sys_probe();
+
       macStop(gpVosContext->pMACContext, HAL_STOP_TYPE_SYS_DEEP_SLEEP);
       ccmStop(gpVosContext->pMACContext);
       VOS_ASSERT( 0 );
@@ -659,6 +680,10 @@ VOS_STATUS vos_start( v_CONTEXT_t vosContext )
      }
      VOS_ASSERT(0);
      vos_event_reset( &(gpVosContext->wdaCompleteEvent) );
+     if (vos_is_logp_in_progress(VOS_MODULE_ID_VOSS, NULL))
+     {
+         VOS_BUG(0);
+     }
      WDA_setNeedShutdown(vosContext);
      return VOS_STATUS_E_FAILURE;
   }
@@ -724,7 +749,7 @@ VOS_STATUS vos_start( v_CONTEXT_t vosContext )
 
 
 err_sme_stop:
-  sme_Stop(pVosContext->pMACContext, TRUE);
+  sme_Stop(pVosContext->pMACContext, HAL_STOP_TYPE_SYS_RESET);
     
 err_mac_stop:
   macStop( pVosContext->pMACContext, HAL_STOP_TYPE_SYS_RESET );
@@ -801,6 +826,9 @@ VOS_STATUS vos_stop( v_CONTEXT_t vosContext )
           VOS_TRACE( VOS_MODULE_ID_VOSS, VOS_TRACE_LEVEL_ERROR,
            "%s: WDA_stop reporting other error", __func__ );
        }
+       VOS_TRACE( VOS_MODULE_ID_VOSS, VOS_TRACE_LEVEL_ERROR,
+           "%s: Test MC thread by posting a probe message to SYS", __func__);
+       wlan_sys_probe();
        WDA_setNeedShutdown(vosContext);
     }
   }
@@ -869,6 +897,7 @@ VOS_STATUS vos_close( v_CONTEXT_t vosContext )
 
   ((pVosContextType)vosContext)->pMACContext = NULL;
 
+#ifndef CONFIG_ENABLE_LINUX_REG
   vosStatus = vos_nv_close();
   if (!VOS_IS_STATUS_SUCCESS(vosStatus))
   {
@@ -876,7 +905,7 @@ VOS_STATUS vos_close( v_CONTEXT_t vosContext )
          "%s: Failed to close NV", __func__);
      VOS_ASSERT( VOS_IS_STATUS_SUCCESS( vosStatus ) );
   }
-
+#endif
 
   vosStatus = sysClose( vosContext );
   if (!VOS_IS_STATUS_SUCCESS(vosStatus))
@@ -1017,6 +1046,7 @@ v_VOID_t* vos_get_context( VOS_MODULE_ID moduleId,
 
     case VOS_MODULE_ID_SME:
     case VOS_MODULE_ID_PE:
+    case VOS_MODULE_ID_PMC:
     {
       /* 
       ** In all these cases, we just return the MAC Context
@@ -1138,6 +1168,31 @@ void vos_set_load_unload_in_progress(VOS_MODULE_ID moduleId, v_U8_t value)
    gpVosContext->isLoadUnloadInProgress = value;
 }
 
+v_U8_t vos_is_reinit_in_progress(VOS_MODULE_ID moduleId, v_VOID_t *moduleContext)
+{
+  if (gpVosContext == NULL)
+  {
+    VOS_TRACE(VOS_MODULE_ID_VOSS, VOS_TRACE_LEVEL_ERROR,
+        "%s: global voss context is NULL", __func__);
+    return 1;
+  }
+
+   return gpVosContext->isReInitInProgress;
+}
+
+void vos_set_reinit_in_progress(VOS_MODULE_ID moduleId, v_U8_t value)
+{
+  if (gpVosContext == NULL)
+  {
+    VOS_TRACE(VOS_MODULE_ID_VOSS, VOS_TRACE_LEVEL_ERROR,
+        "%s: global voss context is NULL", __func__);
+    return;
+  }
+
+   gpVosContext->isReInitInProgress = value;
+}
+
+
 /**---------------------------------------------------------------------------
   
   \brief vos_alloc_context() - allocate a context within the VOSS global Context
@@ -1222,6 +1277,7 @@ VOS_STATUS vos_alloc_context( v_VOID_t *pVosContext, VOS_MODULE_ID moduleID,
     }
     case VOS_MODULE_ID_SME:
     case VOS_MODULE_ID_PE:
+    case VOS_MODULE_ID_PMC:
     case VOS_MODULE_ID_HDD:
     case VOS_MODULE_ID_HDD_SOFTAP:
     default:
@@ -1347,6 +1403,7 @@ VOS_STATUS vos_free_context( v_VOID_t *pVosContext, VOS_MODULE_ID moduleID,
     case VOS_MODULE_ID_HDD:
     case VOS_MODULE_ID_SME:
     case VOS_MODULE_ID_PE:
+    case VOS_MODULE_ID_PMC:
     case VOS_MODULE_ID_HDD_SOFTAP:
     default:
     {     
@@ -1705,6 +1762,11 @@ VOS_STATUS vos_rx_mq_serialize( VOS_MQ_ID msgQueueId, vos_msg_t *pMsg )
        pTargetMq = &(gpVosContext->vosSched.wdiRxMq);
        break;
     }
+    case VOS_MQ_ID_TL:
+    {
+       pTargetMq = &(gpVosContext->vosSched.tlRxMq);
+       break;
+    }
 
     default:
 
@@ -1857,6 +1919,10 @@ vos_fetch_tl_cfg_parms
   pTLConfig->ucAcWeights[1] = pConfig->WfqBeWeight;
   pTLConfig->ucAcWeights[2] = pConfig->WfqViWeight;
   pTLConfig->ucAcWeights[3] = pConfig->WfqVoWeight;
+  pTLConfig->ucReorderAgingTime[0] = pConfig->BkReorderAgingTime;/*WLANTL_AC_BK*/
+  pTLConfig->ucReorderAgingTime[1] = pConfig->BeReorderAgingTime;/*WLANTL_AC_BE*/
+  pTLConfig->ucReorderAgingTime[2] = pConfig->ViReorderAgingTime;/*WLANTL_AC_VI*/
+  pTLConfig->ucReorderAgingTime[3] = pConfig->VoReorderAgingTime;/*WLANTL_AC_VO*/
   pTLConfig->uDelayedTriggerFrmInt = pConfig->DelayedTriggerFrmInt;
   pTLConfig->uMinFramesProcThres = pConfig->MinFramesProcThres;
 
@@ -1867,7 +1933,7 @@ v_BOOL_t vos_is_apps_power_collapse_allowed(void* pHddCtx)
   return hdd_is_apps_power_collapse_allowed((hdd_context_t*) pHddCtx);
 }
 
-void vos_abort_mac_scan(void)
+void vos_abort_mac_scan(v_U8_t sessionId)
 {
     hdd_context_t *pHddCtx = NULL;
     v_CONTEXT_t pVosContext        = NULL;
@@ -1886,10 +1952,9 @@ void vos_abort_mac_scan(void)
        return;
     }
 
-    hdd_abort_mac_scan(pHddCtx);
+    hdd_abort_mac_scan(pHddCtx, sessionId, eCSR_SCAN_ABORT_DEFAULT);
     return;
 }
-
 /*---------------------------------------------------------------------------
 
   \brief vos_shutdown() - shutdown VOS
@@ -1947,14 +2012,6 @@ VOS_STATUS vos_shutdown(v_CONTEXT_t vosContext)
   }
 
   ((pVosContextType)vosContext)->pMACContext = NULL;
-
-  vosStatus = vos_nv_close();
-  if (!VOS_IS_STATUS_SUCCESS(vosStatus))
-  {
-     VOS_TRACE( VOS_MODULE_ID_VOSS, VOS_TRACE_LEVEL_ERROR,
-         "%s: Failed to close NV", __func__);
-     VOS_ASSERT( VOS_IS_STATUS_SUCCESS( vosStatus ) );
-  }
 
   vosStatus = sysClose( vosContext );
   if (!VOS_IS_STATUS_SUCCESS(vosStatus))
@@ -2116,4 +2173,25 @@ VOS_STATUS vos_wlanRestart(void)
    /* Reload the driver */
    vstatus = wlan_hdd_restart_driver(pHddCtx);
    return vstatus;
+}
+
+
+/**
+  @brief vos_fwDumpReq()
+
+  This function is called to issue dump commands to Firmware
+
+  @param
+       cmd - Command No. to execute
+       arg1 - argument 1 to cmd
+       arg2 - argument 2 to cmd
+       arg3 - argument 3 to cmd
+       arg4 - argument 4 to cmd
+  @return
+       NONE
+*/
+v_VOID_t vos_fwDumpReq(tANI_U32 cmd, tANI_U32 arg1, tANI_U32 arg2,
+                        tANI_U32 arg3, tANI_U32 arg4)
+{
+   WDA_HALDumpCmdReq(NULL, cmd, arg1, arg2, arg3, arg4, NULL);
 }

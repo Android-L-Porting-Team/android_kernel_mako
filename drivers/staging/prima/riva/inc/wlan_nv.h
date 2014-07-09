@@ -1,8 +1,29 @@
 /*
-* Copyright (c) 2012 Qualcomm Atheros, Inc.
-* All Rights Reserved.
-* Qualcomm Atheros Confidential and Proprietary.
-*/
+ * Copyright (c) 2012 The Linux Foundation. All rights reserved.
+ *
+ * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
+ *
+ *
+ * Permission to use, copy, modify, and/or distribute this software for
+ * any purpose with or without fee is hereby granted, provided that the
+ * above copyright notice and this permission notice appear in all
+ * copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
+ * WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
+ * AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL
+ * DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR
+ * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+ * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+ * PERFORMANCE OF THIS SOFTWARE.
+ */
+
+/*
+ * This file was originally distributed by Qualcomm Atheros, Inc.
+ * under proprietary terms before Copyright ownership was assigned
+ * to the Linux Foundation.
+ */
 
 /** ------------------------------------------------------------------------- *
     ------------------------------------------------------------------------- *
@@ -15,8 +36,6 @@
            be in this file
 
     $Id$
-
-    Copyright (C) 2006 Airgo Networks, Incorporated
 
 
    ========================================================================== */
@@ -91,12 +110,27 @@ typedef enum
 #define NV_VERSION_11N_11AC_COUPER_TYPE    0
 #define NV_VERSION_11N_11AC_FW_CONFIG      1
 #define NV_VERSION_LPDC_FW_CONFIG          2
+#ifdef FEATURE_WLAN_CH144
+#define NV_VERSION_CH144_CONFIG            3
+#endif /* FEATURE_WLAN_CH144 */
 
 #ifdef WCN_PRONTO
+#ifdef FEATURE_WLAN_CH144
+#define WLAN_NV_VERSION     NV_VERSION_CH144_CONFIG
+#else
 #define WLAN_NV_VERSION     NV_VERSION_LPDC_FW_CONFIG
+#endif /* FEATURE_WLAN_CH144 */
 #else //WCN_PRONTO
 #define WLAN_NV_VERSION     NV_VERSION_11N_11AC_FW_CONFIG
 #endif //WCN_PRONTO
+
+typedef PACKED_PRE struct PACKED_POST
+{
+    uint8   macAddr1[NV_FIELD_MAC_ADDR_SIZE];   /* Default, not change name for compatibility */
+    uint8   macAddr2[NV_FIELD_MAC_ADDR_SIZE];
+    uint8   macAddr3[NV_FIELD_MAC_ADDR_SIZE];
+    uint8   macAddr4[NV_FIELD_MAC_ADDR_SIZE];
+} sMacAddr;
 
 typedef PACKED_PRE union PACKED_POST
 {
@@ -106,10 +140,7 @@ typedef PACKED_PRE union PACKED_POST
     uint8   wlanNvRevId;
     uint8   numOfTxChains;
     uint8   numOfRxChains;
-    uint8   macAddr[NV_FIELD_MAC_ADDR_SIZE];   /* Default, not change name for compatibility */
-    uint8   macAddr2[NV_FIELD_MAC_ADDR_SIZE];
-    uint8   macAddr3[NV_FIELD_MAC_ADDR_SIZE];
-    uint8   macAddr4[NV_FIELD_MAC_ADDR_SIZE];
+    sMacAddr macAddr;
     uint8   mfgSN[NV_FIELD_MFG_SN_SIZE];
     uint8   couplerType;
     uint8   nvVersion;
@@ -150,7 +181,8 @@ typedef enum
 {
     PHY_TX_CHAIN_0 = 0,
 
-    PHY_MAX_TX_CHAINS = 1,
+    NUM_PHY_MAX_TX_CHAINS = 1,
+    PHY_MAX_TX_CHAINS = NUM_PHY_MAX_TX_CHAINS,
     PHY_ALL_TX_CHAINS,
 
     //possible tx chain combinations
@@ -201,101 +233,105 @@ typedef enum
 {
     //2.4GHz Band
     RF_CHAN_1                 = 0,
-    RF_CHAN_2                 = 1,
-    RF_CHAN_3                 = 2,
-    RF_CHAN_4                 = 3,
-    RF_CHAN_5                 = 4,
-    RF_CHAN_6                 = 5,
-    RF_CHAN_7                 = 6,
-    RF_CHAN_8                 = 7,
-    RF_CHAN_9                 = 8,
-    RF_CHAN_10                = 9,
-    RF_CHAN_11                = 10,
-    RF_CHAN_12                = 11,
-    RF_CHAN_13                = 12,
-    RF_CHAN_14                = 13,
+    RF_CHAN_2,
+    RF_CHAN_3,
+    RF_CHAN_4,
+    RF_CHAN_5,
+    RF_CHAN_6,
+    RF_CHAN_7,
+    RF_CHAN_8,
+    RF_CHAN_9,
+    RF_CHAN_10,
+    RF_CHAN_11,
+    RF_CHAN_12,
+    RF_CHAN_13,
+    RF_CHAN_14,
 
     //4.9GHz Band
-    RF_CHAN_240               = 14,
-    RF_CHAN_244               = 15,
-    RF_CHAN_248               = 16,
-    RF_CHAN_252               = 17,
-    RF_CHAN_208               = 18,
-    RF_CHAN_212               = 19,
-    RF_CHAN_216               = 20,
+    RF_CHAN_240,
+    RF_CHAN_244,
+    RF_CHAN_248,
+    RF_CHAN_252,
+    RF_CHAN_208,
+    RF_CHAN_212,
+    RF_CHAN_216,
 
     //5GHz Low & Mid U-NII Band
-    RF_CHAN_36                = 21,
-    RF_CHAN_40                = 22,
-    RF_CHAN_44                = 23,
-    RF_CHAN_48                = 24,
-    RF_CHAN_52                = 25,
-    RF_CHAN_56                = 26,
-    RF_CHAN_60                = 27,
-    RF_CHAN_64                = 28,
+    RF_CHAN_36,
+    RF_CHAN_40,
+    RF_CHAN_44,
+    RF_CHAN_48,
+    RF_CHAN_52,
+    RF_CHAN_56,
+    RF_CHAN_60,
+    RF_CHAN_64,
 
     //5GHz Mid Band - ETSI & FCC
-    RF_CHAN_100               = 29,
-    RF_CHAN_104               = 30,
-    RF_CHAN_108               = 31,
-    RF_CHAN_112               = 32,
-    RF_CHAN_116               = 33,
-    RF_CHAN_120               = 34,
-    RF_CHAN_124               = 35,
-    RF_CHAN_128               = 36,
-    RF_CHAN_132               = 37,
-    RF_CHAN_136               = 38,
-    RF_CHAN_140               = 39,
-
+    RF_CHAN_100,
+    RF_CHAN_104,
+    RF_CHAN_108,
+    RF_CHAN_112,
+    RF_CHAN_116,
+    RF_CHAN_120,
+    RF_CHAN_124,
+    RF_CHAN_128,
+    RF_CHAN_132,
+    RF_CHAN_136,
+    RF_CHAN_140,
+#ifdef FEATURE_WLAN_CH144
+    RF_CHAN_144,
+#endif /* FEATURE_WLAN_CH144 */
     //5GHz High U-NII Band
-    RF_CHAN_149               = 40,
-    RF_CHAN_153               = 41,
-    RF_CHAN_157               = 42,
-    RF_CHAN_161               = 43,
-    RF_CHAN_165               = 44,
+    RF_CHAN_149,
+    RF_CHAN_153,
+    RF_CHAN_157,
+    RF_CHAN_161,
+    RF_CHAN_165,
 
     //CHANNEL BONDED CHANNELS
-    RF_CHAN_BOND_3            = 45,
-    RF_CHAN_BOND_4            = 46,
-    RF_CHAN_BOND_5            = 47,
-    RF_CHAN_BOND_6            = 48,
-    RF_CHAN_BOND_7            = 49,
-    RF_CHAN_BOND_8            = 50,
-    RF_CHAN_BOND_9            = 51,
-    RF_CHAN_BOND_10           = 52,
-    RF_CHAN_BOND_11           = 53,
-    RF_CHAN_BOND_242          = 54,    //4.9GHz Band
-    RF_CHAN_BOND_246          = 55,
-    RF_CHAN_BOND_250          = 56,
-    RF_CHAN_BOND_210          = 57,
-    RF_CHAN_BOND_214          = 58,
-    RF_CHAN_BOND_38           = 59,    //5GHz Low & Mid U-NII Band
-    RF_CHAN_BOND_42           = 60,
-    RF_CHAN_BOND_46           = 61,
-    RF_CHAN_BOND_50           = 62,
-    RF_CHAN_BOND_54           = 63,
-    RF_CHAN_BOND_58           = 64,
-    RF_CHAN_BOND_62           = 65,
-    RF_CHAN_BOND_102          = 66,    //5GHz Mid Band - ETSI & FCC
-    RF_CHAN_BOND_106          = 67,
-    RF_CHAN_BOND_110          = 68,
-    RF_CHAN_BOND_114          = 69,
-    RF_CHAN_BOND_118          = 70,
-    RF_CHAN_BOND_122          = 71,
-    RF_CHAN_BOND_126          = 72,
-    RF_CHAN_BOND_130          = 73,
-    RF_CHAN_BOND_134          = 74,
-    RF_CHAN_BOND_138          = 75,
-    RF_CHAN_BOND_151          = 76,    //5GHz High U-NII Band
-    RF_CHAN_BOND_155          = 77,
-    RF_CHAN_BOND_159          = 78,
-    RF_CHAN_BOND_163          = 79,
+    RF_CHAN_BOND_3,
+    RF_CHAN_BOND_4,
+    RF_CHAN_BOND_5,
+    RF_CHAN_BOND_6,
+    RF_CHAN_BOND_7,
+    RF_CHAN_BOND_8,
+    RF_CHAN_BOND_9,
+    RF_CHAN_BOND_10,
+    RF_CHAN_BOND_11,
+    RF_CHAN_BOND_242,    //4.9GHz Band
+    RF_CHAN_BOND_246,
+    RF_CHAN_BOND_250,
+    RF_CHAN_BOND_210,
+    RF_CHAN_BOND_214,
+    RF_CHAN_BOND_38,    //5GHz Low & Mid U-NII Band
+    RF_CHAN_BOND_42,
+    RF_CHAN_BOND_46,
+    RF_CHAN_BOND_50,
+    RF_CHAN_BOND_54,
+    RF_CHAN_BOND_58,
+    RF_CHAN_BOND_62,
+    RF_CHAN_BOND_102,    //5GHz Mid Band - ETSI & FCC
+    RF_CHAN_BOND_106,
+    RF_CHAN_BOND_110,
+    RF_CHAN_BOND_114,
+    RF_CHAN_BOND_118,
+    RF_CHAN_BOND_122,
+    RF_CHAN_BOND_126,
+    RF_CHAN_BOND_130,
+    RF_CHAN_BOND_134,
+    RF_CHAN_BOND_138,
+#ifdef FEATURE_WLAN_CH144
+    RF_CHAN_BOND_142,
+#endif /* FEATURE_WLAN_CH144 */
+    RF_CHAN_BOND_151,    //5GHz High U-NII Band
+    RF_CHAN_BOND_155,
+    RF_CHAN_BOND_159,
+    RF_CHAN_BOND_163,
 
     NUM_RF_CHANNELS,
 
     MIN_2_4GHZ_CHANNEL = RF_CHAN_1,
     MAX_2_4GHZ_CHANNEL = RF_CHAN_14,
-    NUM_2_4GHZ_CHANNELS = (MAX_2_4GHZ_CHANNEL - MIN_2_4GHZ_CHANNEL + 1),
 
     MIN_5GHZ_CHANNEL = RF_CHAN_240,
     MAX_5GHZ_CHANNEL = RF_CHAN_165,
@@ -322,6 +358,26 @@ typedef enum
     RF_CHANNEL_INVALID_MAX_FIELD = 0x7FFFFFFF  /* define as 4 bytes data */
 }eRfChannels;
 
+typedef enum
+{
+   RF_CHAN_1_1 = RF_CHAN_1,
+   RF_CHAN_2_1 = RF_CHAN_2,
+   RF_CHAN_3_1 = RF_CHAN_3,
+   RF_CHAN_4_1 = RF_CHAN_4,
+   RF_CHAN_5_1 = RF_CHAN_5,
+   RF_CHAN_6_1 = RF_CHAN_6,
+   RF_CHAN_7_1 = RF_CHAN_7,
+   RF_CHAN_8_1 = RF_CHAN_8,
+   RF_CHAN_9_1 = RF_CHAN_9,
+   RF_CHAN_10_1 = RF_CHAN_10,
+   RF_CHAN_11_1 = RF_CHAN_11,
+   RF_CHAN_12_1 = RF_CHAN_12,
+   RF_CHAN_13_1 = RF_CHAN_13,
+   RF_CHAN_14_1 = RF_CHAN_14,
+// The above params are used for scripts.
+   NUM_2_4GHZ_CHANNELS,
+}eRfChannels_2_4GHz;
+	
 enum
 {
    NV_CHANNEL_DISABLE,
@@ -369,13 +425,14 @@ typedef enum
 
 #define HW_CAL_VALUES_VALID_BMAP_UNUSED                             0   //Value
 //Bit mask
-#define HW_VAL_VALUES_VALID_BMAP_SLEEP_TIME_OVERHEAD_2G_MASK        0x1
-#define HW_VAL_VALUES_VALID_BMAP_SLEEP_TIME_OVERHEAD_5G_MASK        0x2
-#define HW_VAL_VALUES_VALID_BMAP_SLEEP_TIME_OVERHEAD_xLNA_5G_MASK   0x4
-#define HW_VAL_VALUES_VALID_TXBBF_SEL_9MHZ_MASK                     0x8
-#define HW_VAL_VALUES_VALID_CUSTOM_TCXO_REG8_MASK                   0x10
-#define HW_VAL_VALUES_VALID_CUSTOM_TCXO_REG9_MASK                   0x20
-
+#define HW_CAL_VALUES_VALID_BMAP_SLEEP_TIME_OVERHEAD_2G_MASK        0x1
+#define HW_CAL_VALUES_VALID_BMAP_SLEEP_TIME_OVERHEAD_5G_MASK        0x2
+#define HW_CAL_VALUES_VALID_BMAP_SLEEP_TIME_OVERHEAD_xLNA_5G_MASK   0x4
+#define HW_CAL_VALUES_VALID_TXBBF_SEL_9MHZ_MASK                     0x8
+#define HW_CAL_VALUES_VALID_CUSTOM_TCXO_REG8_MASK                   0x10
+#define HW_CAL_VALUES_VALID_CUSTOM_TCXO_REG9_MASK                   0x20
+#define HW_CAL_VALUES_VALID_ANTENNA_DIVERSITY_ENABLED_MASK          0x40
+#define HW_CAL_VALUES_VALID_CUSTOM_RC_DELAY_MASK                    0x80
 
 //From wlanfw/inc/halPhyCalMemory.h
 typedef PACKED_PRE struct PACKED_POST
@@ -434,7 +491,7 @@ typedef PACKED_PRE struct PACKED_POST
                                        //MSB set if extraPrecision.hi8_adjustedPwrDet is used
 }tTpcCaldPowerPoint;
 
-typedef tTpcCaldPowerPoint tTpcCaldPowerTable[PHY_MAX_TX_CHAINS][MAX_TPC_CAL_POINTS];
+typedef tTpcCaldPowerPoint tTpcCaldPowerTable[NUM_PHY_MAX_TX_CHAINS][MAX_TPC_CAL_POINTS];
 
 typedef PACKED_PRE struct PACKED_POST
 {
@@ -446,7 +503,7 @@ typedef PACKED_PRE struct PACKED_POST
 #define TPC_MEM_POWER_LUT_DEPTH 256
 #endif
 
-typedef tTpcLutValue tTpcPowerTable[PHY_MAX_TX_CHAINS][TPC_MEM_POWER_LUT_DEPTH];
+typedef tTpcLutValue tTpcPowerTable[NUM_PHY_MAX_TX_CHAINS][TPC_MEM_POWER_LUT_DEPTH];
 
 typedef PACKED_PRE struct PACKED_POST
 {
@@ -617,7 +674,7 @@ typedef enum
 }eHalPhyRates;
 
 #define NUM_RATE_POWER_GROUPS           NUM_HAL_PHY_RATES  //total number of rate power groups including the CB_RATE_POWER_OFFSET
-typedef uAbsPwrPrecision tRateGroupPwr[NUM_RATE_POWER_GROUPS];
+typedef uAbsPwrPrecision tRateGroupPwr[NUM_HAL_PHY_RATES];
 
 //From halNvTables.h
 #define NV_FIELD_COUNTRY_CODE_SIZE  3
@@ -627,17 +684,50 @@ typedef PACKED_PRE struct PACKED_POST
     uint8 countryCode[NV_FIELD_COUNTRY_CODE_SIZE];    // string identifier
 }sDefaultCountry;
 
+
+#define GF_PA_BIAS_SELECT_MASK         0X7 //(3 bits)
+#define TSMC_PA_BIAS_SELECT_MASK       0x7 //(3 bits)
+
+#define GF_PA_BIAS_SELECT_1            0X0
+#define GF_PA_BIAS_SELECT_2            0X1
+
+#define TSMC_PA_BIAS_SELECT_1          0X0
+#define TSMC_PA_BIAS_SELECT_2          0X1
+#define TSMC_PA_BIAS_SELECT_3          0x2
+
+
+#define EXT_PA_CTRL_POLARITY_DEFAULT   0X0
+#define EXT_PA_CTRL_POLARITY_VALID     0X80
+
+#define EXT_PA_CTRL0_POLARITY_MASK     0X3
+#define EXT_PA_CTRL0_POLARITY_OFFSET   0X0
+#define EXT_PA_CTRL1_POLARITY_MASK     0XC
+#define EXT_PA_CTRL1_POLARITY_OFFSET   0X2
+
+#define EXT_PA_CTRL_POLARITY_ZERO      0X1
+#define EXT_PA_CTRL_POLARITY_ONE       0X2
+
+#define GF_TX_PWR_ADJUST_2G_MASK          0XF0000
+#define GF_TX_PWR_ADJUST_2G_OFFSET        16
+#define GF_TX_PWR_ADJUST_5G_LOW_MASK      0XF00000
+#define GF_TX_PWR_ADJUST_5G_LOW_OFFSET    20
+#define GF_TX_PWR_ADJUST_5G_MID_MASK      0XF000000
+#define GF_TX_PWR_ADJUST_5G_MID_OFFSET    24
+#define GF_TX_PWR_ADJUST_5G_HIGH_MASK     0XF0000000
+#define GF_TX_PWR_ADJUST_5G_HIGH_OFFSET   28
+
+
 typedef PACKED_PRE struct PACKED_POST
 {
     uint8 skuID; 
     uint8 tpcMode2G;
     uint8 tpcMode5G;
-    uint8 reserved1;
+    uint8 configItem1;
 
     uint8 xPA2G;
     uint8 xPA5G;
-    uint8 paPolarityTx;
-    uint8 paPolarityRx;
+    uint8 extPaCtrl0Polarity;
+    uint8 extPaCtrl1Polarity;
 
     uint8 xLNA2G;
     uint8 xLNA5G;
@@ -654,9 +744,9 @@ typedef PACKED_PRE struct PACKED_POST
     uint8 pdadcSelect5GMid;
     uint8 pdadcSelect5GHigh;
 
-    uint32 reserved2;
-    uint32 resreved3;
-    uint32 resreved4;
+    uint32 configItem2;
+    uint32 configItem3;
+    uint32 configItem4;
 }sFwConfig;
 
 
