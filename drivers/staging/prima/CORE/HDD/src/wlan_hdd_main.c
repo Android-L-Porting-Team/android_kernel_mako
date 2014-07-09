@@ -9107,8 +9107,8 @@ err_close_adapter:
    hdd_close_all_adapters( pHddCtx );
 #ifdef CONFIG_ENABLE_LINUX_REG
 err_unregister_wiphy:
-   wiphy_unregister(wiphy) ;
 #endif
+   wiphy_unregister(wiphy) ;
 err_vosstop:
    vos_stop(pVosContext);
 

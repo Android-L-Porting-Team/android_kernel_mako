@@ -212,12 +212,12 @@ void wpalMemoryFill(void *buf, wpt_uint32 size, wpt_byte bFill)
  */
 void *wpalDmaMemoryAllocate(wpt_uint32 size, void **ppPhysicalAddr)
 {
-   struct device *wcnss_device = (struct device *) gContext.devHandle;
+   //struct device *wcnss_device = (struct device *) gContext.devHandle;
    void *pv = NULL;
    dma_addr_t PhyAddr;
    wpt_uint32 uAllocLen = size + sizeof(tPalDmaMemInfo);
    
-   pv = dma_alloc_coherent(wcnss_device, uAllocLen, &PhyAddr, GFP_KERNEL);
+   pv = dma_alloc_coherent(/*wcnss_device*/NULL, uAllocLen, &PhyAddr, GFP_KERNEL);
    if ( NULL == pv ) 
    {
      WPAL_TRACE(eWLAN_MODULE_PAL, eWLAN_PAL_TRACE_LEVEL_ERROR, 
