@@ -1,0 +1,12 @@
+language: c
+env:
+  - ARCH=arm
+  - SUBARCH=arm
+  - CROSS_COMPILE=arm-eabi-
+before_install:
+  - git clone https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/arm/arm-eabi-4.6
+  - export PATH=$(pwd)/arm-eabi-4.6/bin:$PATH
+before_script:
+  - make mako_defconfig
+script:
+  - make
