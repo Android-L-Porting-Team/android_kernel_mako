@@ -143,6 +143,20 @@ static int change_client_addr(struct bcm2079x_dev *bcm2079x_dev, int addr)
     return (ret == sizeof(addr_data) ? 0 : -EIO);
 }
 
+static void set_client_addr(struct bcm2079x_dev *bcm2079x_dev, int addr)
+{
+	struct i2c_client *client = bcm2079x_dev->client;
+	dev_info(&client->dev,
+		"Set client device address from 0x%04X flag = "\
+		"%02x, to  0x%04X\n",
+		client->addr, client->flags, addr);
+	client->addr = addr;
+	if (addr < 0x80)
+		client->flags &= ~I2C_CLIENT_TEN;
+	else
+		client->flags |= I2C_CLIENT_TEN;
+}
+
 static irqreturn_t bcm2079x_dev_irq_handler(int irq, void *dev_id)
 {
 	struct bcm2079x_dev *bcm2079x_dev = dev_id;
@@ -305,6 +319,9 @@ static long bcm2079x_dev_unlocked_ioctl(struct file *filp,
 		break;
 	case BCMNFC_WAKE_CTL:
 		gpio_set_value(bcm2079x_dev->wake_gpio, arg);
+		break;
+	case BCMNFC_SET_ADDR:
+		set_client_addr(bcm2079x_dev, arg);
 		break;
 	default:
 		dev_err(&bcm2079x_dev->client->dev,
