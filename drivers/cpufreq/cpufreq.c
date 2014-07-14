@@ -49,6 +49,9 @@ static DEFINE_PER_CPU(struct cpufreq_cpu_save_data, cpufreq_policy_save);
 #endif
 static DEFINE_SPINLOCK(cpufreq_driver_lock);
 
+static struct kset *cpufreq_kset;
+static struct kset *cpudev_kset;
+
 /*
  * cpu_policy_rwsem is a per CPU reader-writer semaphore designed to cure
  * all cpufreq/hotplug/workqueue/etc related lock issues.
@@ -435,8 +438,12 @@ static ssize_t store_##file_name					\
 	if (ret != 1)							\
 		return -EINVAL;						\
 									\
+	ret = cpufreq_driver->verify(&new_policy);			\
+	if (ret)							\
+		pr_err("cpufreq: Frequency verification failed\n");	\
+									\
+	policy->user_policy.object = new_policy.object;			\
 	ret = __cpufreq_set_policy(policy, &new_policy);		\
-	policy->user_policy.object = policy->object;			\
 									\
 	return ret ? ret : count;					\
 }
@@ -503,6 +510,8 @@ static ssize_t store_scaling_governor(struct cpufreq_policy *policy,
 	policy->user_policy.governor = policy->governor;
 
 	sysfs_notify(&policy->kobj, NULL, "scaling_governor");
+
+	kobject_uevent(cpufreq_global_kobject, KOBJ_ADD);
 
 	if (ret)
 		return ret;
@@ -604,6 +613,31 @@ static ssize_t show_scaling_setspeed(struct cpufreq_policy *policy, char *buf)
 	return policy->governor->show_setspeed(policy, buf);
 }
 
+static ssize_t store_dvfs_test(struct cpufreq_policy *policy,
+					const char *buf, size_t count)
+{
+	unsigned int enable= 0;
+	unsigned int ret;
+
+	if (!policy->governor || !policy->governor->start_dvfs_test)
+		return -EINVAL;
+
+	ret = sscanf(buf, "%u", &enable);
+	if (ret != 1)
+		return -EINVAL;
+
+	policy->governor->start_dvfs_test(policy, enable);
+
+	return count;
+}
+
+static ssize_t show_dvfs_test(struct cpufreq_policy *policy, char *buf)
+{
+	if (!policy->governor || !policy->governor->show_dvfs_test)
+		return sprintf(buf, "<unsupported>\n");
+
+	return policy->governor->show_dvfs_test(policy, buf);
+}
 /**
  * show_scaling_driver - show the current cpufreq HW/BIOS limitation
  */
@@ -618,6 +652,14 @@ static ssize_t show_bios_limit(struct cpufreq_policy *policy, char *buf)
 	}
 	return sprintf(buf, "%u\n", policy->cpuinfo.max_freq);
 }
+
+#ifdef CONFIG_MSM_CPU_VOLTAGE_CONTROL
+extern ssize_t show_UV_mV_table(struct cpufreq_policy *policy,
+					char *buf);
+
+extern ssize_t store_UV_mV_table(struct cpufreq_policy *policy,
+					const char *buf, size_t count);
+#endif
 
 cpufreq_freq_attr_ro_perm(cpuinfo_cur_freq, 0400);
 cpufreq_freq_attr_ro(cpuinfo_min_freq);
@@ -634,6 +676,10 @@ cpufreq_freq_attr_rw(scaling_min_freq);
 cpufreq_freq_attr_rw(scaling_max_freq);
 cpufreq_freq_attr_rw(scaling_governor);
 cpufreq_freq_attr_rw(scaling_setspeed);
+cpufreq_freq_attr_rw(dvfs_test);
+#ifdef CONFIG_MSM_CPU_VOLTAGE_CONTROL
+cpufreq_freq_attr_rw(UV_mV_table);
+#endif
 
 static struct attribute *default_attrs[] = {
 	&cpuinfo_min_freq.attr,
@@ -648,6 +694,10 @@ static struct attribute *default_attrs[] = {
 	&scaling_driver.attr,
 	&scaling_available_governors.attr,
 	&scaling_setspeed.attr,
+        &dvfs_test.attr,
+#ifdef CONFIG_MSM_CPU_VOLTAGE_CONTROL
+	&UV_mV_table.attr,
+#endif
 	NULL
 };
 
@@ -787,6 +837,8 @@ static int cpufreq_add_dev_policy(unsigned int cpu,
 
 			spin_lock_irqsave(&cpufreq_driver_lock, flags);
 			cpumask_copy(managed_policy->cpus, policy->cpus);
+			cpumask_and(managed_policy->cpus,
+					managed_policy->cpus, cpu_online_mask);
 			per_cpu(cpufreq_cpu_data, cpu) = managed_policy;
 			spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
 
@@ -859,6 +911,16 @@ static int cpufreq_add_dev_interface(unsigned int cpu,
 				   &dev->kobj, "cpufreq");
 	if (ret)
 		return ret;
+
+	/* create cpu device kset */
+	if (!cpudev_kset) {
+		cpudev_kset = kset_create_and_add("kset", NULL, &dev->kobj);
+		BUG_ON(!cpudev_kset);
+		dev->kobj.kset = cpudev_kset;
+	}
+
+	/* send uevent when cpu device is added */
+	kobject_uevent(&dev->kobj, KOBJ_ADD);
 
 	/* set up files for this cpu device */
 	drv_attr = cpufreq_driver->attr;
@@ -1999,6 +2061,12 @@ static int __init cpufreq_core_init(void)
 
 	cpufreq_global_kobject = kobject_create_and_add("cpufreq", &cpu_subsys.dev_root->kobj);
 	BUG_ON(!cpufreq_global_kobject);
+
+	/* create cpufreq kset */
+	cpufreq_kset = kset_create_and_add("kset", NULL, cpufreq_global_kobject);
+	BUG_ON(!cpufreq_kset);
+	cpufreq_global_kobject->kset = cpufreq_kset;
+
 	register_syscore_ops(&cpufreq_syscore_ops);
 
 	return 0;
