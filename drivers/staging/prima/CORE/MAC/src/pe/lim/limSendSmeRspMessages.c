@@ -1,5 +1,25 @@
 /*
- * Copyright (c) 2012-2014 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
+ *
+ * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
+ *
+ *
+ * Permission to use, copy, modify, and/or distribute this software for
+ * any purpose with or without fee is hereby granted, provided that the
+ * above copyright notice and this permission notice appear in all
+ * copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
+ * WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
+ * AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL
+ * DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR
+ * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+ * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+ * PERFORMANCE OF THIS SOFTWARE.
+ */
+/*
+ * Copyright (c) 2012, The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -20,12 +40,7 @@
  */
 
 /*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
- */
-
-/*
+ * Airgo Networks, Inc proprietary. All rights reserved.
  * This file limSendSmeRspMessages.cc contains the functions
  * for sending SME response/notification messages to applications
  * above MAC software.
@@ -94,12 +109,11 @@ limSendSmeRsp(tpAniSirGlobal pMac, tANI_U16 msgType,
            FL("Sending message %s with reasonCode %s"),
            limMsgStr(msgType), limResultCodeStr(resultCode));)
 
-    pSirSmeRsp = vos_mem_malloc(sizeof(tSirSmeRsp));
-    if ( NULL == pSirSmeRsp )
+    if( eHAL_STATUS_SUCCESS != palAllocateMemory( pMac->hHdd, (void **)&pSirSmeRsp, sizeof(tSirSmeRsp)))
     {
         /// Buffer not available. Log error
         limLog(pMac, LOGP,
-               FL("call to AllocateMemory failed for eWNI_SME_*_RSP"));
+               FL("call to palAllocateMemory failed for eWNI_SME_*_RSP"));
 
         return;
     }
@@ -116,7 +130,7 @@ limSendSmeRsp(tpAniSirGlobal pMac, tANI_U16 msgType,
     mmhMsg.type = msgType;
     mmhMsg.bodyptr = pSirSmeRsp;
     mmhMsg.bodyval = 0;
-    MTRACE(macTraceMsgTx(pMac, smesessionId, mmhMsg.type));
+    MTRACE(macTraceMsgTx(pMac, smesessionId , mmhMsg.type));
 
 #ifdef FEATURE_WLAN_DIAG_SUPPORT_LIM //FEATURE_WLAN_DIAG_SUPPORT 
    {
@@ -198,75 +212,6 @@ static void limSendSmeJoinReassocRspAfterResume( tpAniSirGlobal pMac,
     limSysProcessMmhMsgApi(pMac, &mmhMsg,  ePROT);
 }
 
-/**
- * limGetMaxRateFlags()
- *
- *FUNCTION:
- *This function is called by limSendSmeJoinReassocRsp get rateFlags.
- *These rateflags are used when MAX link-speed need to be reported
- *to UI.
- *
- *PARAMS:
- * @param  pStaDs - Pointer to internal STA Datastructure
- * @param  psessionEntry - Pointer to the session entry
- *
- *LOGIC:
- *
- *ASSUMPTIONS:
- *
- *NOTE:
- *
- * @return rateFlags
- */
-tANI_U32 limGetMaxRateFlags(tpDphHashNode pStaDs, tpPESession psessionEntry)
-{
-    tANI_U32 rate_flags = 0;
-
-   if (NULL == psessionEntry)
-    {
-        return rate_flags;
-    }
-
-    if(!IS_DOT11_MODE_HT(psessionEntry->dot11mode) &&
-       !IS_DOT11_MODE_VHT(psessionEntry->dot11mode))
-    {
-       rate_flags |= eHAL_TX_RATE_LEGACY;
-    }
-    else
-    {
-        if(IS_DOT11_MODE_HT(psessionEntry->dot11mode))
-        {
-            if (pStaDs->htShortGI20Mhz || pStaDs->htShortGI40Mhz )
-                rate_flags |= eHAL_TX_RATE_SGI;
-
-            if (pStaDs->htSupportedChannelWidthSet)
-                rate_flags |=eHAL_TX_RATE_HT40;
-            else
-                rate_flags |=eHAL_TX_RATE_HT20;
-        }
-#ifdef WLAN_FEATURE_11AC
-        if(IS_DOT11_MODE_VHT(psessionEntry->dot11mode))
-        {
-            if (WNI_CFG_VHT_CHANNEL_WIDTH_80MHZ ==
-                            pStaDs->vhtSupportedChannelWidthSet)
-            {
-                rate_flags |= eHAL_TX_RATE_VHT80;
-            }
-            else if(WNI_CFG_VHT_CHANNEL_WIDTH_20_40MHZ ==
-                           pStaDs->vhtSupportedChannelWidthSet)
-            {
-                if (eHT_CHANNEL_WIDTH_40MHZ ==
-                               pStaDs->htSupportedChannelWidthSet)
-                    rate_flags |= eHAL_TX_RATE_VHT40;
-                else
-                    rate_flags |= eHAL_TX_RATE_VHT20;
-           }
-        }
-#endif
-    }
-
-     return rate_flags;
-}
 
 /**
  * limSendSmeJoinReassocRsp()
@@ -319,15 +264,14 @@ limSendSmeJoinReassocRsp(tpAniSirGlobal pMac, tANI_U16 msgType,
 
         rspLen = sizeof(tSirSmeJoinRsp);   
 
-        pSirSmeJoinRsp = vos_mem_malloc(rspLen);
-        if ( NULL == pSirSmeJoinRsp )
+        if( eHAL_STATUS_SUCCESS != palAllocateMemory( pMac->hHdd, (void **)&pSirSmeJoinRsp, rspLen))
         {
             /// Buffer not available. Log error
-            limLog(pMac, LOGP, FL("call to AllocateMemory failed for JOIN/REASSOC_RSP"));
+            limLog(pMac, LOGP, FL("call to palAllocateMemory failed for JOIN/REASSOC_RSP"));
             return;
         }
          
-        vos_mem_set((tANI_U8*)pSirSmeJoinRsp, rspLen, 0);
+        palZeroMemory(pMac, (tANI_U8*)pSirSmeJoinRsp, rspLen);
          
          
         pSirSmeJoinRsp->beaconLength = 0;
@@ -342,22 +286,21 @@ limSendSmeJoinReassocRsp(tpAniSirGlobal pMac, tANI_U16 msgType,
 #ifdef WLAN_FEATURE_VOWIFI_11R
             psessionEntry->RICDataLen +
 #endif
-#ifdef FEATURE_WLAN_ESE
+#ifdef FEATURE_WLAN_CCX            
             psessionEntry->tspecLen + 
 #endif            
             sizeof(tSirSmeJoinRsp) - sizeof(tANI_U8) ;
-
-        pSirSmeJoinRsp = vos_mem_malloc(rspLen);
-        if ( NULL == pSirSmeJoinRsp )
+    
+        if( eHAL_STATUS_SUCCESS != palAllocateMemory( pMac->hHdd, (void **)&pSirSmeJoinRsp, rspLen))
         {
             /// Buffer not available. Log error
             limLog(pMac, LOGP,
-               FL("call to AllocateMemory failed for JOIN/REASSOC_RSP"));
+               FL("call to palAllocateMemory failed for JOIN/REASSOC_RSP"));
 
             return;
         }
 
-        vos_mem_set((tANI_U8*)pSirSmeJoinRsp, rspLen, 0);
+        palZeroMemory(pMac, (tANI_U8*)pSirSmeJoinRsp, rspLen);
 
         if (resultCode == eSIR_SME_SUCCESS)
         {
@@ -372,10 +315,6 @@ limSendSmeJoinReassocRsp(tpAniSirGlobal pMac, tANI_U16 msgType,
                 pSirSmeJoinRsp->staId = pStaDs->staIndex;
                 pSirSmeJoinRsp->ucastSig   = pStaDs->ucUcastSig;
                 pSirSmeJoinRsp->bcastSig   = pStaDs->ucBcastSig;
-                pSirSmeJoinRsp->maxRateFlags =
-                                limGetMaxRateFlags(pStaDs, psessionEntry);
-                PELOGE(limLog(pMac, LOG1, FL("maxRateFlags: %x"),
-                                              pSirSmeJoinRsp->maxRateFlags);)
             }
         }
 
@@ -385,7 +324,7 @@ limSendSmeJoinReassocRsp(tpAniSirGlobal pMac, tANI_U16 msgType,
 #ifdef WLAN_FEATURE_VOWIFI_11R
         pSirSmeJoinRsp->parsedRicRspLen = 0;
 #endif
-#ifdef FEATURE_WLAN_ESE
+#ifdef FEATURE_WLAN_CCX            
         pSirSmeJoinRsp->tspecIeLen = 0;
 #endif
         
@@ -395,9 +334,8 @@ limSendSmeJoinReassocRsp(tpAniSirGlobal pMac, tANI_U16 msgType,
             if(psessionEntry->beacon != NULL)
             {
                 pSirSmeJoinRsp->beaconLength = psessionEntry->bcnLen;
-                vos_mem_copy( pSirSmeJoinRsp->frames, psessionEntry->beacon,
-                              pSirSmeJoinRsp->beaconLength);
-                vos_mem_free( psessionEntry->beacon);
+                palCopyMemory(pMac->hHdd, pSirSmeJoinRsp->frames, psessionEntry->beacon, pSirSmeJoinRsp->beaconLength);
+                palFreeMemory(pMac->hHdd, psessionEntry->beacon);
                 psessionEntry->beacon = NULL;
 #ifdef WLAN_FEATURE_VOWIFI_11R_DEBUG
                 PELOG1(limLog(pMac, LOG1, FL("Beacon=%d"), psessionEntry->bcnLen);)
@@ -407,9 +345,8 @@ limSendSmeJoinReassocRsp(tpAniSirGlobal pMac, tANI_U16 msgType,
             if(psessionEntry->assocReq != NULL)
             {
                 pSirSmeJoinRsp->assocReqLength = psessionEntry->assocReqLen;
-                vos_mem_copy( pSirSmeJoinRsp->frames + psessionEntry->bcnLen,
-                              psessionEntry->assocReq, pSirSmeJoinRsp->assocReqLength);
-                vos_mem_free( psessionEntry->assocReq);
+                palCopyMemory(pMac->hHdd, pSirSmeJoinRsp->frames + psessionEntry->bcnLen, psessionEntry->assocReq, pSirSmeJoinRsp->assocReqLength);
+                palFreeMemory(pMac->hHdd, psessionEntry->assocReq);
                 psessionEntry->assocReq = NULL;
 #ifdef WLAN_FEATURE_VOWIFI_11R_DEBUG
                 PELOG1(limLog(pMac, LOG1, FL("AssocReq=%d"), psessionEntry->assocReqLen);)
@@ -418,36 +355,28 @@ limSendSmeJoinReassocRsp(tpAniSirGlobal pMac, tANI_U16 msgType,
             if(psessionEntry->assocRsp != NULL)
             {
                 pSirSmeJoinRsp->assocRspLength = psessionEntry->assocRspLen;
-                vos_mem_copy( pSirSmeJoinRsp->frames + psessionEntry->bcnLen +
-                                               psessionEntry->assocReqLen,
-                              psessionEntry->assocRsp,
-                              pSirSmeJoinRsp->assocRspLength);
-                vos_mem_free( psessionEntry->assocRsp);
+                palCopyMemory(pMac->hHdd, pSirSmeJoinRsp->frames + psessionEntry->bcnLen + psessionEntry->assocReqLen, psessionEntry->assocRsp, pSirSmeJoinRsp->assocRspLength);
+                palFreeMemory(pMac->hHdd, psessionEntry->assocRsp);
                 psessionEntry->assocRsp = NULL;
             }           
 #ifdef WLAN_FEATURE_VOWIFI_11R
             if(psessionEntry->ricData != NULL)
             {
                 pSirSmeJoinRsp->parsedRicRspLen = psessionEntry->RICDataLen;
-                vos_mem_copy( pSirSmeJoinRsp->frames + psessionEntry->bcnLen +
-                                 psessionEntry->assocReqLen + psessionEntry->assocRspLen,
-                              psessionEntry->ricData, pSirSmeJoinRsp->parsedRicRspLen);
-                vos_mem_free(psessionEntry->ricData);
+                palCopyMemory(pMac->hHdd, pSirSmeJoinRsp->frames + psessionEntry->bcnLen + psessionEntry->assocReqLen + psessionEntry->assocRspLen, psessionEntry->ricData, pSirSmeJoinRsp->parsedRicRspLen);
+                palFreeMemory(pMac->hHdd, psessionEntry->ricData);
                 psessionEntry->ricData = NULL;
                 PELOG1(limLog(pMac, LOG1, FL("RicLength=%d"), pSirSmeJoinRsp->parsedRicRspLen);)
             }
 #endif
-#ifdef FEATURE_WLAN_ESE
+#ifdef FEATURE_WLAN_CCX            
             if(psessionEntry->tspecIes != NULL)
             {
                 pSirSmeJoinRsp->tspecIeLen = psessionEntry->tspecLen;
-                vos_mem_copy( pSirSmeJoinRsp->frames + psessionEntry->bcnLen +
-                                psessionEntry->assocReqLen + psessionEntry->assocRspLen +
-                                  psessionEntry->RICDataLen,
-                              psessionEntry->tspecIes, pSirSmeJoinRsp->tspecIeLen);
-                vos_mem_free(psessionEntry->tspecIes);
+                palCopyMemory(pMac->hHdd, pSirSmeJoinRsp->frames + psessionEntry->bcnLen + psessionEntry->assocReqLen + psessionEntry->assocRspLen + psessionEntry->RICDataLen, psessionEntry->tspecIes, pSirSmeJoinRsp->tspecIeLen);
+                palFreeMemory(pMac->hHdd, psessionEntry->tspecIes);
                 psessionEntry->tspecIes = NULL;
-                PELOG1(limLog(pMac, LOG1, FL("ESE-TspecLen=%d"), psessionEntry->tspecLen);)
+                PELOG1(limLog(pMac, LOG1, FL("CCX-TspecLen=%d"), psessionEntry->tspecLen);)
             }
 #endif            
             pSirSmeJoinRsp->aid = psessionEntry->limAID;
@@ -460,19 +389,19 @@ limSendSmeJoinReassocRsp(tpAniSirGlobal pMac, tANI_U16 msgType,
 
             if(psessionEntry->beacon != NULL)
             {
-                vos_mem_free(psessionEntry->beacon);
+                palFreeMemory(pMac->hHdd, psessionEntry->beacon);
                 psessionEntry->beacon = NULL;
             }
 
             if(psessionEntry->assocReq != NULL)
             {
-                vos_mem_free( psessionEntry->assocReq);
+                palFreeMemory(pMac->hHdd, psessionEntry->assocReq);
                 psessionEntry->assocReq = NULL;
             }
 
             if(psessionEntry->assocRsp != NULL)
             {
-                vos_mem_free( psessionEntry->assocRsp);
+                palFreeMemory(pMac->hHdd, psessionEntry->assocRsp);
                 psessionEntry->assocRsp = NULL;
             }
 
@@ -525,6 +454,7 @@ limSendSmeJoinReassocRsp(tpAniSirGlobal pMac, tANI_U16 msgType,
 } /*** end limSendSmeJoinReassocRsp() ***/
 
 
+
 /**
  * limSendSmeStartBssRsp()
  *
@@ -570,14 +500,14 @@ limSendSmeStartBssRsp(tpAniSirGlobal pMac,
 
     if(psessionEntry == NULL)
     {
-         pSirSmeRsp = vos_mem_malloc(size);
-         if ( NULL == pSirSmeRsp )
+       
+         if( eHAL_STATUS_SUCCESS != palAllocateMemory( pMac->hHdd, (void **)&pSirSmeRsp, size))
          {
             /// Buffer not available. Log error
-            limLog(pMac, LOGP,FL("call to AllocateMemory failed for eWNI_SME_START_BSS_RSP"));
+            limLog(pMac, LOGP,FL("call to palAllocateMemory failed for eWNI_SME_START_BSS_RSP"));
             return;
          }
-         vos_mem_set((tANI_U8*)pSirSmeRsp, size, 0);
+         palZeroMemory(pMac, (tANI_U8*)pSirSmeRsp, size);
                       
     }
     else
@@ -588,16 +518,15 @@ limSendSmeStartBssRsp(tpAniSirGlobal pMac,
         //calculate the memory size to allocate
         size += ieLen;
 
-        pSirSmeRsp = vos_mem_malloc(size);
-        if ( NULL == pSirSmeRsp )
+        if( eHAL_STATUS_SUCCESS != palAllocateMemory( pMac->hHdd, (void **)&pSirSmeRsp, size))
         {
             /// Buffer not available. Log error
             limLog(pMac, LOGP,
-            FL("call to AllocateMemory failed for eWNI_SME_START_BSS_RSP"));
+            FL("call to palAllocateMemory failed for eWNI_SME_START_BSS_RSP"));
 
             return;
         }
-        vos_mem_set((tANI_U8*)pSirSmeRsp, size, 0);
+        palZeroMemory(pMac, (tANI_U8*)pSirSmeRsp, size);
         size = sizeof(tSirSmeStartBssRsp);
         if (resultCode == eSIR_SME_SUCCESS)
         {
@@ -625,11 +554,11 @@ limSendSmeStartBssRsp(tpAniSirGlobal pMac,
                 pSirSmeRsp->bssDescription.aniIndicator = 1;
 
                 curLen = pMac->sch.schObject.gSchBeaconOffsetBegin - ieOffset;
-                vos_mem_copy( (tANI_U8 *) &pSirSmeRsp->bssDescription.ieFields,
+                palCopyMemory( pMac->hHdd, (tANI_U8 *) &pSirSmeRsp->bssDescription.ieFields,
                            pMac->sch.schObject.gSchBeaconFrameBegin + ieOffset,
                           (tANI_U32)curLen);
 
-                vos_mem_copy( ((tANI_U8 *) &pSirSmeRsp->bssDescription.ieFields) + curLen,
+                palCopyMemory( pMac->hHdd, ((tANI_U8 *) &pSirSmeRsp->bssDescription.ieFields) + curLen,
                            pMac->sch.schObject.gSchBeaconFrameEnd,
                           (tANI_U32)pMac->sch.schObject.gSchBeaconOffsetEnd);
 
@@ -641,6 +570,10 @@ limSendSmeStartBssRsp(tpAniSirGlobal pMac,
                 //This is the size of the message, subtracting the size of the pointer to ieFields
                 size += ieLen - sizeof(tANI_U32);
         }
+
+            
+
+        
     }
 
     pSirSmeRsp->messageType     = msgType;
@@ -671,6 +604,10 @@ limSendSmeStartBssRsp(tpAniSirGlobal pMac,
 
     limSysProcessMmhMsgApi(pMac, &mmhMsg,  ePROT);
 } /*** end limSendSmeStartBssRsp() ***/
+
+
+
+
 
 #define LIM_MAX_NUM_OF_SCAN_RESULTS_REPORTED  20
 #define LIM_SIZE_OF_EACH_BSS  400 // this is a rough estimate
@@ -729,12 +666,11 @@ limSendSmeScanRsp(tpAniSirGlobal pMac, tANI_U16 length,
     bssCount = 0;
     msgLen = 0;
     allocLength = LIM_MAX_NUM_OF_SCAN_RESULTS_REPORTED * LIM_SIZE_OF_EACH_BSS;
-    pSirSmeScanRsp = vos_mem_malloc(allocLength);
-    if ( NULL == pSirSmeScanRsp )
+    if( eHAL_STATUS_SUCCESS != palAllocateMemory( pMac->hHdd, (void **)&pSirSmeScanRsp, allocLength))
     {
         // Log error
         limLog(pMac, LOGP,
-                   FL("call to AllocateMemory failed for eWNI_SME_SCAN_RSP"));
+                   FL("call to palAllocateMemory failed for eWNI_SME_SCAN_RSP"));
 
         return;
     }
@@ -770,12 +706,11 @@ limSendSmeScanRsp(tpAniSirGlobal pMac, tANI_U16 length,
                 mmhMsg.bodyval = 0;
                 MTRACE(macTraceMsgTx(pMac, NO_SESSION, mmhMsg.type));
                 limSysProcessMmhMsgApi(pMac, &mmhMsg, ePROT);
-                pSirSmeScanRsp = vos_mem_malloc(allocLength);
-                if ( NULL == pSirSmeScanRsp )
+                if( eHAL_STATUS_SUCCESS != palAllocateMemory( pMac->hHdd, (void **)&pSirSmeScanRsp, allocLength))
                 {
                     // Log error
                     limLog(pMac, LOGP,
-                                 FL("call to AllocateMemory failed for eWNI_SME_SCAN_RSP"));
+                                 FL("call to palAllocateMemory failed for eWNI_SME_SCAN_RSP"));
                     return;
                 }
                 msgLen = sizeof(tSirSmeScanRsp) -
@@ -791,9 +726,9 @@ limSendSmeScanRsp(tpAniSirGlobal pMac, tANI_U16 length,
                           msgLen, ptemp->bssDescription.length);)
             pDesc->length
                     = ptemp->bssDescription.length;
-            vos_mem_copy( (tANI_U8 *) &pDesc->bssId,
-                          (tANI_U8 *) &ptemp->bssDescription.bssId,
-                           ptemp->bssDescription.length);
+            palCopyMemory( pMac->hHdd, (tANI_U8 *) &pDesc->bssId,
+                              (tANI_U8 *) &ptemp->bssDescription.bssId,
+                              ptemp->bssDescription.length);
 
             PELOG2(limLog(pMac, LOG2, FL("BssId "));
             limPrintMacAddr(pMac, ptemp->bssDescription.bssId, LOG2);)
@@ -810,7 +745,7 @@ limSendSmeScanRsp(tpAniSirGlobal pMac, tANI_U16 length,
        limPostSmeScanRspMessage(pMac, length, resultCode, smesessionId, smetranscationId);
        if (NULL != pSirSmeScanRsp)
        {
-           vos_mem_free( pSirSmeScanRsp);
+           palFreeMemory( pMac->hHdd, pSirSmeScanRsp);
            pSirSmeScanRsp = NULL;
        }
     }
@@ -891,12 +826,12 @@ limSendSmeLfrScanRsp(tpAniSirGlobal pMac, tANI_U16 length,
     bssCount = 0;
     msgLen = 0;
     allocLength = LIM_MAX_NUM_OF_SCAN_RESULTS_REPORTED * LIM_SIZE_OF_EACH_BSS;
-    pSirSmeScanRsp = vos_mem_malloc(allocLength);
-    if ( NULL == pSirSmeScanRsp )
+    if ( eHAL_STATUS_SUCCESS != palAllocateMemory( pMac->hHdd,
+                                (void **)&pSirSmeScanRsp, allocLength))
     {
         // Log error
         limLog(pMac, LOGP,
-                   FL("call to AllocateMemory failed for eWNI_SME_SCAN_RSP\n"));
+                   FL("call to palAllocateMemory failed for eWNI_SME_SCAN_RSP\n"));
 
         return;
     }
@@ -932,12 +867,13 @@ limSendSmeLfrScanRsp(tpAniSirGlobal pMac, tANI_U16 length,
                 mmhMsg.bodyval = 0;
                 MTRACE(macTraceMsgTx(pMac, NO_SESSION, mmhMsg.type));
                 limSysProcessMmhMsgApi(pMac, &mmhMsg, ePROT);
-                pSirSmeScanRsp = vos_mem_malloc(allocLength);
-                if ( NULL == pSirSmeScanRsp )
+                if (eHAL_STATUS_SUCCESS != palAllocateMemory(pMac->hHdd,
+                                                   (void **)&pSirSmeScanRsp,
+                                                   allocLength))
                 {
                     // Log error
                     limLog(pMac, LOGP,
-                                 FL("call to AllocateMemory failed for eWNI_SME_SCAN_RSP\n"));
+                                 FL("call to palAllocateMemory failed for eWNI_SME_SCAN_RSP\n"));
                     return;
                 }
                 msgLen = sizeof(tSirSmeScanRsp) -
@@ -953,9 +889,9 @@ limSendSmeLfrScanRsp(tpAniSirGlobal pMac, tANI_U16 length,
                           msgLen, ptemp->bssDescription.length);)
             pDesc->length
                     = ptemp->bssDescription.length;
-            vos_mem_copy( (tANI_U8 *) &pDesc->bssId,
-                          (tANI_U8 *) &ptemp->bssDescription.bssId,
-                           ptemp->bssDescription.length);
+            palCopyMemory( pMac->hHdd, (tANI_U8 *) &pDesc->bssId,
+                              (tANI_U8 *) &ptemp->bssDescription.bssId,
+                              ptemp->bssDescription.length);
 
             PELOG2(limLog(pMac, LOG2, FL("BssId "));
             limPrintMacAddr(pMac, ptemp->bssDescription.bssId, LOG2);)
@@ -972,7 +908,7 @@ limSendSmeLfrScanRsp(tpAniSirGlobal pMac, tANI_U16 length,
        limPostSmeScanRspMessage(pMac, length, resultCode, smesessionId, smetranscationId);
        if (NULL != pSirSmeScanRsp)
        {
-           vos_mem_free( pSirSmeScanRsp);
+           palFreeMemory( pMac->hHdd, pSirSmeScanRsp);
            pSirSmeScanRsp = NULL;
        }
     }
@@ -1029,13 +965,12 @@ limPostSmeScanRspMessage(tpAniSirGlobal    pMac,
        FL("limPostSmeScanRspMessage: send SME_SCAN_RSP (len %d, reasonCode %s). "),
        length, limResultCodeStr(resultCode));)
 
-    pSirSmeScanRsp = vos_mem_malloc(length);
-    if ( NULL == pSirSmeScanRsp )
+    if( eHAL_STATUS_SUCCESS != palAllocateMemory( pMac->hHdd, (void **)&pSirSmeScanRsp, length))
     {
-        limLog(pMac, LOGP, FL("AllocateMemory failed for eWNI_SME_SCAN_RSP"));
+        limLog(pMac, LOGP, FL("palAllocateMemory failed for eWNI_SME_SCAN_RSP"));
         return;
     }
-    vos_mem_set((void*)pSirSmeScanRsp, length, 0);
+    palZeroMemory(pMac->hHdd, (void*)pSirSmeScanRsp, length);
 
     pSirSmeScanRsp->messageType = eWNI_SME_SCAN_RSP;
     pSirSmeScanRsp->length      = length;
@@ -1107,10 +1042,9 @@ void limSendSmeOemDataRsp(tpAniSirGlobal pMac, tANI_U32* pMsgBuf, tSirResultCode
     msgLength = sizeof(tSirOemDataRsp);
 
     //now allocate memory for the char buffer
-    pSirSmeOemDataRsp = vos_mem_malloc(msgLength);
-    if (NULL == pSirSmeOemDataRsp)
+    if(eHAL_STATUS_SUCCESS != palAllocateMemory(pMac->hHdd, (void**)&pSirSmeOemDataRsp, msgLength))
     {
-        limLog(pMac, LOGP, FL("call to AllocateMemory failed for pSirSmeOemDataRsp"));
+        limLog(pMac, LOGP, FL("call to palAllocateMemory failed for pSirSmeOemDataRsp"));
         return;
     }
 
@@ -1122,10 +1056,10 @@ void limSendSmeOemDataRsp(tpAniSirGlobal pMac, tANI_U32* pMsgBuf, tSirResultCode
     pSirSmeOemDataRsp->messageType = eWNI_SME_OEM_DATA_RSP;
 #endif
 
-    vos_mem_copy(pSirSmeOemDataRsp->oemDataRsp, pMlmOemDataRsp->oemDataRsp, OEM_DATA_RSP_SIZE);
+    palCopyMemory(pMac->hHdd, pSirSmeOemDataRsp->oemDataRsp, pMlmOemDataRsp->oemDataRsp, OEM_DATA_RSP_SIZE);
 
     //Now free the memory from MLM Rsp Message
-    vos_mem_free(pMlmOemDataRsp);
+    palFreeMemory(pMac->hHdd, pMlmOemDataRsp);
 
     mmhMsg.type = eWNI_SME_OEM_DATA_RSP;
     mmhMsg.bodyptr = pSirSmeOemDataRsp;
@@ -1175,12 +1109,12 @@ limSendSmeAuthRsp(tpAniSirGlobal pMac,
     tSirMsgQ       mmhMsg;
     tSirSmeAuthRsp *pSirSmeAuthRsp;
 
-    pSirSmeAuthRsp = vos_mem_malloc(sizeof(tSirSmeAuthRsp));
-    if (NULL == pSirSmeAuthRsp)
+
+    if( eHAL_STATUS_SUCCESS != palAllocateMemory( pMac->hHdd, (void **)&pSirSmeAuthRsp, sizeof(tSirSmeAuthRsp)))
     {
         // Log error
         limLog(pMac, LOGP,
-               FL("call to AllocateMemory failed for eWNI_SME_AUTH_RSP"));
+               FL("call to palAllocateMemory failed for eWNI_SME_AUTH_RSP"));
 
         return;
     }
@@ -1189,7 +1123,7 @@ limSendSmeAuthRsp(tpAniSirGlobal pMac,
 
     if(psessionEntry != NULL)
     {
-        vos_mem_copy( (tANI_U8 *) pSirSmeAuthRsp->peerMacAddr,
+        palCopyMemory( pMac->hHdd, (tANI_U8 *) pSirSmeAuthRsp->peerMacAddr,
                   (tANI_U8 *) peerMacAddr, sizeof(tSirMacAddr));
         pSirSmeAuthRsp->authType    = authType;
           
@@ -1282,18 +1216,15 @@ limSendSmeDisassocNtf(tpAniSirGlobal pMac,
              * host triggered disassociation
              */
 
-            pSirSmeDisassocRsp = vos_mem_malloc(sizeof(tSirSmeDisassocRsp));
-            if ( NULL == pSirSmeDisassocRsp )
+            if( eHAL_STATUS_SUCCESS != palAllocateMemory( pMac->hHdd, (void **)&pSirSmeDisassocRsp, sizeof(tSirSmeDisassocRsp)))
             {
                 // Log error
                 limLog(pMac, LOGP,
-                   FL("call to AllocateMemory failed for eWNI_SME_DISASSOC_RSP"));
+                   FL("call to palAllocateMemory failed for eWNI_SME_DISASSOC_RSP"));
 
                 return;
             }
-            limLog(pMac, LOG1, FL("send eWNI_SME_DEAUTH_RSP with "
-            "retCode: %d for "MAC_ADDRESS_STR),reasonCode,
-            MAC_ADDR_ARRAY(peerMacAddr));
+
             pSirSmeDisassocRsp->messageType = eWNI_SME_DISASSOC_RSP;
             pSirSmeDisassocRsp->length      = sizeof(tSirSmeDisassocRsp);
             //sessionId
@@ -1310,7 +1241,7 @@ limSendSmeDisassocNtf(tpAniSirGlobal pMac,
             pBuf += sizeof(tSirResultCodes);
 
             //peerMacAddr
-            vos_mem_copy( pBuf, peerMacAddr, sizeof(tSirMacAddr));
+            palCopyMemory( pMac->hHdd, pBuf, peerMacAddr, sizeof(tSirMacAddr));
             pBuf += sizeof(tSirMacAddr);
 
             // Clear Station Stats
@@ -1319,7 +1250,6 @@ limSendSmeDisassocNtf(tpAniSirGlobal pMac,
 
           
 #ifdef FEATURE_WLAN_DIAG_SUPPORT_LIM //FEATURE_WLAN_DIAG_SUPPORT 
-
             limDiagEventReport(pMac, WLAN_PE_DIAG_DISASSOC_RSP_EVENT,
                                       psessionEntry, (tANI_U16)reasonCode, 0);
 #endif
@@ -1332,18 +1262,15 @@ limSendSmeDisassocNtf(tpAniSirGlobal pMac,
              * frame reception from peer entity or due to
              * loss of link with peer entity.
              */
-            pSirSmeDisassocInd = vos_mem_malloc(sizeof(tSirSmeDisassocInd));
-            if ( NULL == pSirSmeDisassocInd )
+            if( eHAL_STATUS_SUCCESS != palAllocateMemory( pMac->hHdd, (void **)&pSirSmeDisassocInd, sizeof(tSirSmeDisassocInd)))
             {
                 // Log error
                 limLog(pMac, LOGP,
-                   FL("call to AllocateMemory failed for eWNI_SME_DISASSOC_IND"));
+                   FL("call to palAllocateMemory failed for eWNI_SME_DISASSOC_IND"));
 
                 return;
             }
-            limLog(pMac, LOG1, FL("send eWNI_SME_DISASSOC_IND with "
-            "retCode: %d for "MAC_ADDRESS_STR),reasonCode,
-            MAC_ADDR_ARRAY(peerMacAddr));
+
             pSirSmeDisassocInd->messageType = eWNI_SME_DISASSOC_IND;
             pSirSmeDisassocInd->length      = sizeof(tSirSmeDisassocInd);
             
@@ -1356,10 +1283,10 @@ limSendSmeDisassocNtf(tpAniSirGlobal pMac,
             limCopyU32(pBuf, reasonCode);
             pBuf += sizeof(tSirResultCodes);
 
-            vos_mem_copy( pBuf, psessionEntry->bssId, sizeof(tSirMacAddr));
+            palCopyMemory( pMac->hHdd, pBuf, psessionEntry->bssId, sizeof(tSirMacAddr));
             pBuf += sizeof(tSirMacAddr);
 
-            vos_mem_copy( pBuf, peerMacAddr, sizeof(tSirMacAddr));
+            palCopyMemory( pMac->hHdd, pBuf, peerMacAddr, sizeof(tSirMacAddr));
 
 
 #ifdef FEATURE_WLAN_DIAG_SUPPORT_LIM //FEATURE_WLAN_DIAG_SUPPORT 
@@ -1401,10 +1328,9 @@ limSendSmeDisassocInd(tpAniSirGlobal pMac, tpDphHashNode pStaDs,tpPESession pses
     tSirMsgQ  mmhMsg;
     tSirSmeDisassocInd *pSirSmeDisassocInd;
 
-    pSirSmeDisassocInd = vos_mem_malloc(sizeof(tSirSmeDisassocInd));
-    if ( NULL == pSirSmeDisassocInd )
+    if( eHAL_STATUS_SUCCESS != palAllocateMemory( pMac->hHdd, (void **)&pSirSmeDisassocInd, sizeof(tSirSmeDisassocInd)))
     {
-        limLog(pMac, LOGP, FL("AllocateMemory failed for eWNI_SME_DISASSOC_IND"));
+        limLog(pMac, LOGP, FL("palAllocateMemory failed for eWNI_SME_DISASSOC_IND"));
         return;
     }
 
@@ -1415,13 +1341,13 @@ limSendSmeDisassocInd(tpAniSirGlobal pMac, tpDphHashNode pStaDs,tpPESession pses
     pSirSmeDisassocInd->transactionId =  psessionEntry->transactionId;
     pSirSmeDisassocInd->statusCode    =  pStaDs->mlmStaContext.disassocReason;
     pSirSmeDisassocInd->reasonCode    =  pStaDs->mlmStaContext.disassocReason;
-
-    vos_mem_copy( pSirSmeDisassocInd->bssId, psessionEntry->bssId, sizeof(tSirMacAddr));
-
-    vos_mem_copy( pSirSmeDisassocInd->peerMacAddr, pStaDs->staAddr, sizeof(tSirMacAddr));
+    
+    palCopyMemory( pMac->hHdd, pSirSmeDisassocInd->bssId , psessionEntry->bssId , sizeof(tSirMacAddr));
+ 
+    palCopyMemory( pMac->hHdd, pSirSmeDisassocInd->peerMacAddr , pStaDs->staAddr, sizeof(tSirMacAddr));
 
     pSirSmeDisassocInd->staId = pStaDs->staIndex;
-
+ 
     mmhMsg.type = eWNI_SME_DISASSOC_IND;
     mmhMsg.bodyptr = pSirSmeDisassocInd;
     mmhMsg.bodyval = 0;
@@ -1454,10 +1380,9 @@ limSendSmeDeauthInd(tpAniSirGlobal pMac, tpDphHashNode pStaDs, tpPESession psess
     tSirMsgQ  mmhMsg;
     tSirSmeDeauthInd  *pSirSmeDeauthInd;
 
-    pSirSmeDeauthInd = vos_mem_malloc(sizeof(tSirSmeDeauthInd));
-    if ( NULL == pSirSmeDeauthInd )
+    if( eHAL_STATUS_SUCCESS != palAllocateMemory( pMac->hHdd, (void **)&pSirSmeDeauthInd, sizeof(tSirSmeDeauthInd)))
     {
-        limLog(pMac, LOGP, FL("AllocateMemory failed for eWNI_SME_DEAUTH_IND "));
+        limLog(pMac, LOGP, FL("palAllocateMemory failed for eWNI_SME_DEAUTH_IND "));
         return;
     }
 
@@ -1476,9 +1401,9 @@ limSendSmeDeauthInd(tpAniSirGlobal pMac, tpDphHashNode pStaDs, tpPESession psess
         pSirSmeDeauthInd->statusCode = (tSirResultCodes)pStaDs->mlmStaContext.disassocReason;
     }
     //BSSID
-    vos_mem_copy( pSirSmeDeauthInd->bssId, psessionEntry->bssId, sizeof(tSirMacAddr));
+    palCopyMemory( pMac->hHdd, pSirSmeDeauthInd->bssId, psessionEntry->bssId, sizeof(tSirMacAddr));
     //peerMacAddr
-    vos_mem_copy( pSirSmeDeauthInd->peerMacAddr, pStaDs->staAddr, sizeof(tSirMacAddr));
+    palCopyMemory( pMac->hHdd, pSirSmeDeauthInd->peerMacAddr, pStaDs->staAddr, sizeof(tSirMacAddr));
     pSirSmeDeauthInd->reasonCode = pStaDs->mlmStaContext.disassocReason;
 
 
@@ -1523,10 +1448,9 @@ limSendSmeTDLSDelStaInd(tpAniSirGlobal pMac, tpDphHashNode pStaDs, tpPESession p
     tSirMsgQ  mmhMsg;
     tSirTdlsDelStaInd  *pSirTdlsDelStaInd;
 
-    pSirTdlsDelStaInd = vos_mem_malloc(sizeof(tSirTdlsDelStaInd));
-    if ( NULL == pSirTdlsDelStaInd )
+    if( eHAL_STATUS_SUCCESS != palAllocateMemory( pMac->hHdd, (void **)&pSirTdlsDelStaInd, sizeof(tSirTdlsDelStaInd)))
     {
-        limLog(pMac, LOGP, FL("AllocateMemory failed for eWNI_SME_TDLS_DEL_STA_IND "));
+        limLog(pMac, LOGP, FL("palAllocateMemory failed for eWNI_SME_TDLS_DEL_STA_IND "));
         return;
     }
 
@@ -1538,7 +1462,7 @@ limSendSmeTDLSDelStaInd(tpAniSirGlobal pMac, tpDphHashNode pStaDs, tpPESession p
     pSirTdlsDelStaInd->sessionId = psessionEntry->smeSessionId;
 
     //peerMacAddr
-    vos_mem_copy( pSirTdlsDelStaInd->peerMac, pStaDs->staAddr, sizeof(tSirMacAddr));
+    palCopyMemory( pMac->hHdd, pSirTdlsDelStaInd->peerMac, pStaDs->staAddr, sizeof(tSirMacAddr));
 
     //staId
     limCopyU16((tANI_U8*)(&pSirTdlsDelStaInd->staId), (tANI_U16)pStaDs->staIndex);
@@ -1579,10 +1503,9 @@ limSendSmeTDLSDeleteAllPeerInd(tpAniSirGlobal pMac, tpPESession psessionEntry)
     tSirMsgQ  mmhMsg;
     tSirTdlsDelAllPeerInd  *pSirTdlsDelAllPeerInd;
 
-    pSirTdlsDelAllPeerInd = vos_mem_malloc(sizeof(tSirTdlsDelAllPeerInd));
-    if ( NULL == pSirTdlsDelAllPeerInd )
+    if ( eHAL_STATUS_SUCCESS != palAllocateMemory( pMac->hHdd, (void **)&pSirTdlsDelAllPeerInd, sizeof(tSirTdlsDelAllPeerInd)))
     {
-        limLog(pMac, LOGP, FL("AllocateMemory failed for eWNI_SME_TDLS_DEL_ALL_PEER_IND"));
+        limLog(pMac, LOGP, FL("palAllocateMemory failed for eWNI_SME_TDLS_DEL_ALL_PEER_IND"));
         return;
     }
 
@@ -1629,10 +1552,9 @@ limSendSmeMgmtTXCompletion(tpAniSirGlobal pMac,
     tSirMsgQ  mmhMsg;
     tSirMgmtTxCompletionInd  *pSirMgmtTxCompletionInd;
 
-    pSirMgmtTxCompletionInd = vos_mem_malloc(sizeof(tSirMgmtTxCompletionInd));
-    if ( NULL == pSirMgmtTxCompletionInd )
+    if ( eHAL_STATUS_SUCCESS != palAllocateMemory( pMac->hHdd, (void **)&pSirMgmtTxCompletionInd, sizeof(tSirMgmtTxCompletionInd)))
     {
-        limLog(pMac, LOGP, FL("AllocateMemory failed for eWNI_SME_MGMT_FRM_TX_COMPLETION_IND"));
+        limLog(pMac, LOGP, FL("palAllocateMemory failed for eWNI_SME_MGMT_FRM_TX_COMPLETION_IND"));
         return;
     }
 
@@ -1705,18 +1627,15 @@ limSendSmeDeauthNtf(tpAniSirGlobal pMac, tSirMacAddr peerMacAddr, tSirResultCode
              * Deauthentication response to host triggered
              * deauthentication.
              */
-            pSirSmeDeauthRsp = vos_mem_malloc(sizeof(tSirSmeDeauthRsp));
-            if ( NULL == pSirSmeDeauthRsp )
+            if( eHAL_STATUS_SUCCESS != palAllocateMemory( pMac->hHdd, (void **)&pSirSmeDeauthRsp, sizeof(tSirSmeDeauthRsp)))
             {
                 // Log error
                 limLog(pMac, LOGP,
-                   FL("call to AllocateMemory failed for eWNI_SME_DEAUTH_RSP"));
+                   FL("call to palAllocateMemory failed for eWNI_SME_DEAUTH_RSP"));
 
                 return;
             }
-            limLog(pMac, LOG1, FL("send eWNI_SME_DEAUTH_RSP with "
-            "retCode: %d for"MAC_ADDRESS_STR),reasonCode,
-            MAC_ADDR_ARRAY(peerMacAddr));
+
             pSirSmeDeauthRsp->messageType = eWNI_SME_DEAUTH_RSP;
             pSirSmeDeauthRsp->length      = sizeof(tSirSmeDeauthRsp);
             pSirSmeDeauthRsp->statusCode = reasonCode;
@@ -1724,7 +1643,7 @@ limSendSmeDeauthNtf(tpAniSirGlobal pMac, tSirMacAddr peerMacAddr, tSirResultCode
             pSirSmeDeauthRsp->transactionId = smetransactionId;  
 
             pBuf  = (tANI_U8 *) pSirSmeDeauthRsp->peerMacAddr;
-            vos_mem_copy( pBuf, peerMacAddr, sizeof(tSirMacAddr));
+            palCopyMemory( pMac->hHdd, pBuf, peerMacAddr, sizeof(tSirMacAddr));
 
 #ifdef FEATURE_WLAN_DIAG_SUPPORT_LIM //FEATURE_WLAN_DIAG_SUPPORT 
             limDiagEventReport(pMac, WLAN_PE_DIAG_DEAUTH_RSP_EVENT,
@@ -1740,18 +1659,15 @@ limSendSmeDeauthNtf(tpAniSirGlobal pMac, tSirMacAddr peerMacAddr, tSirResultCode
              * frame reception from peer entity or due to
              * loss of link with peer entity.
              */
-            pSirSmeDeauthInd = vos_mem_malloc(sizeof(tSirSmeDeauthInd));
-            if ( NULL == pSirSmeDeauthInd )
+            if( eHAL_STATUS_SUCCESS != palAllocateMemory( pMac->hHdd, (void **)&pSirSmeDeauthInd, sizeof(tSirSmeDeauthInd)))
             {
                 // Log error
                 limLog(pMac, LOGP,
-                   FL("call to AllocateMemory failed for eWNI_SME_DEAUTH_Ind"));
+                   FL("call to palAllocateMemory failed for eWNI_SME_DEAUTH_Ind"));
 
                 return;
             }
-            limLog(pMac, LOG1, FL("send eWNI_SME_DEAUTH_IND with "
-            "retCode: %d for "MAC_ADDRESS_STR),reasonCode,
-            MAC_ADDR_ARRAY(peerMacAddr));
+
             pSirSmeDeauthInd->messageType = eWNI_SME_DEAUTH_IND;
             pSirSmeDeauthInd->length      = sizeof(tSirSmeDeauthInd);
             pSirSmeDeauthInd->reasonCode = eSIR_MAC_UNSPEC_FAILURE_REASON;
@@ -1769,11 +1685,11 @@ limSendSmeDeauthNtf(tpAniSirGlobal pMac, tSirMacAddr peerMacAddr, tSirResultCode
             pBuf += sizeof(tSirResultCodes);
 
             //bssId
-            vos_mem_copy( pBuf, psessionEntry->bssId, sizeof(tSirMacAddr));
+            palCopyMemory( pMac->hHdd, pBuf, psessionEntry->bssId, sizeof(tSirMacAddr));
             pBuf += sizeof(tSirMacAddr);
 
             //peerMacAddr
-            vos_mem_copy( pSirSmeDeauthInd->peerMacAddr, peerMacAddr, sizeof(tSirMacAddr));
+            palCopyMemory( pMac->hHdd, pSirSmeDeauthInd->peerMacAddr, peerMacAddr, sizeof(tSirMacAddr));
 
 #ifdef FEATURE_WLAN_DIAG_SUPPORT_LIM //FEATURE_WLAN_DIAG_SUPPORT 
             limDiagEventReport(pMac, WLAN_PE_DIAG_DEAUTH_IND_EVENT,
@@ -1826,11 +1742,17 @@ limSendSmeWmStatusChangeNtf(tpAniSirGlobal pMac, tSirSmeStatusChangeCode statusC
 {
     tSirMsgQ                  mmhMsg;
     tSirSmeWmStatusChangeNtf  *pSirSmeWmStatusChangeNtf;
-    pSirSmeWmStatusChangeNtf = vos_mem_malloc(sizeof(tSirSmeWmStatusChangeNtf));
-    if ( NULL == pSirSmeWmStatusChangeNtf )
+    eHalStatus                status;
+
+
+
+    status = palAllocateMemory( pMac->hHdd, (void **)&pSirSmeWmStatusChangeNtf,
+                                                    sizeof(tSirSmeWmStatusChangeNtf));
+    if (status != eHAL_STATUS_SUCCESS)
     {
         limLog(pMac, LOGE,
-          FL("call to AllocateMemory failed for eWNI_SME_WM_STATUS_CHANGE_NTF"));
+          FL("call to palAllocateMemory failed for eWNI_SME_WM_STATUS_CHANGE_NTF, status = %d"),
+          status);
           return;
     }
 
@@ -1862,8 +1784,7 @@ limSendSmeWmStatusChangeNtf(tpAniSirGlobal pMac, tSirSmeStatusChangeCode statusC
         pSirSmeWmStatusChangeNtf->sessionId = sessionId;
         if(sizeof(pSirSmeWmStatusChangeNtf->statusChangeInfo) >= infoLen)
         {
-            vos_mem_copy( (tANI_U8 *)&pSirSmeWmStatusChangeNtf->statusChangeInfo,
-                          (tANI_U8 *)pStatusChangeInfo, infoLen);
+            palCopyMemory( pMac->hHdd, (tANI_U8 *)&pSirSmeWmStatusChangeNtf->statusChangeInfo, (tANI_U8 *)pStatusChangeInfo, infoLen);
         }
         limLog(pMac, LOGE, FL("***---*** StatusChg: code 0x%x, length %d ***---***"),
                statusChangeCode, infoLen);
@@ -1874,7 +1795,7 @@ limSendSmeWmStatusChangeNtf(tpAniSirGlobal pMac, tSirSmeStatusChangeCode statusC
     MTRACE(macTraceMsgTx(pMac, sessionId, mmhMsg.type));
     if (eSIR_SUCCESS != limSysProcessMmhMsgApi(pMac, &mmhMsg, ePROT))
     {
-        vos_mem_free(pSirSmeWmStatusChangeNtf);
+        palFreeMemory(pMac->hHdd, (void *) pSirSmeWmStatusChangeNtf);
         limLog( pMac, LOGP, FL("limSysProcessMmhMsgApi failed"));
     }
 
@@ -1918,12 +1839,11 @@ limSendSmeSetContextRsp(tpAniSirGlobal pMac,
     tSirMsgQ             mmhMsg;
     tSirSmeSetContextRsp *pSirSmeSetContextRsp;
 
-    pSirSmeSetContextRsp = vos_mem_malloc(sizeof(tSirSmeSetContextRsp));
-    if ( NULL == pSirSmeSetContextRsp )
+    if( eHAL_STATUS_SUCCESS != palAllocateMemory( pMac->hHdd, (void **)&pSirSmeSetContextRsp, sizeof(tSirSmeSetContextRsp)))
     {
         // Log error
         limLog(pMac, LOGP,
-               FL("call to AllocateMemory failed for SmeSetContextRsp"));
+               FL("call to palAllocateMemory failed for SmeSetContextRsp"));
 
         return;
     }
@@ -1934,7 +1854,7 @@ limSendSmeSetContextRsp(tpAniSirGlobal pMac,
 
     pBuf = pSirSmeSetContextRsp->peerMacAddr;
 
-    vos_mem_copy( pBuf, (tANI_U8 *) peerMacAddr, sizeof(tSirMacAddr));
+    palCopyMemory( pMac->hHdd, pBuf, (tANI_U8 *) peerMacAddr, sizeof(tSirMacAddr));
     pBuf += sizeof(tSirMacAddr);
 
 
@@ -1998,12 +1918,11 @@ limSendSmeRemoveKeyRsp(tpAniSirGlobal pMac,
     tSirMsgQ                mmhMsg;
     tSirSmeRemoveKeyRsp     *pSirSmeRemoveKeyRsp;
 
-    pSirSmeRemoveKeyRsp = vos_mem_malloc(sizeof(tSirSmeRemoveKeyRsp));
-    if ( NULL == pSirSmeRemoveKeyRsp )
+    if( eHAL_STATUS_SUCCESS != palAllocateMemory( pMac->hHdd, (void **)&pSirSmeRemoveKeyRsp, sizeof(tSirSmeRemoveKeyRsp)))
     {
         // Log error
         limLog(pMac, LOGP,
-               FL("call to AllocateMemory failed for SmeRemoveKeyRsp"));
+               FL("call to palAllocateMemory failed for SmeRemoveKeyRsp"));
 
         return;
     }
@@ -2013,7 +1932,9 @@ limSendSmeRemoveKeyRsp(tpAniSirGlobal pMac,
     if(psessionEntry != NULL)
     {
         pBuf = pSirSmeRemoveKeyRsp->peerMacAddr;
-        vos_mem_copy( pBuf, (tANI_U8 *) peerMacAddr, sizeof(tSirMacAddr));
+        palCopyMemory( pMac->hHdd, pBuf, (tANI_U8 *) peerMacAddr, sizeof(tSirMacAddr));
+        pBuf += sizeof(tSirMacAddr);
+        limCopyU32(pBuf, resultCode);
     }
     
     pSirSmeRemoveKeyRsp->messageType = eWNI_SME_REMOVEKEY_RSP;
@@ -2067,11 +1988,10 @@ limSendSmePromiscuousModeRsp(tpAniSirGlobal pMac)
     tSirMsgQ   mmhMsg;
     tSirMbMsg  *pMbMsg;
 
-    pMbMsg = vos_mem_malloc(sizeof(tSirMbMsg));
-    if ( NULL == pMbMsg )
+    if( eHAL_STATUS_SUCCESS != palAllocateMemory( pMac->hHdd, (void **)&pMbMsg, sizeof(tSirMbMsg)))
     {
         // Log error
-        limLog(pMac, LOGP, FL("call to AllocateMemory failed"));
+        limLog(pMac, LOGP, FL("call to palAllocateMemory failed"));
 
         return;
     }
@@ -2148,12 +2068,11 @@ limSendSmeNeighborBssInd(tpAniSirGlobal pMac,
      * and length of header itself
      */
     val = pBssDescr->bssDescription.length + sizeof(tANI_U16) + sizeof(tANI_U32) + sizeof(tANI_U8);
-    pNewBssInd = vos_mem_malloc(val);
-    if ( NULL == pNewBssInd )
+    if( eHAL_STATUS_SUCCESS != palAllocateMemory( pMac->hHdd, (void **)&pNewBssInd, val))
     {
         // Log error
         limLog(pMac, LOGP,
-           FL("call to AllocateMemory failed for eWNI_SME_NEIGHBOR_BSS_IND"));
+           FL("call to palAllocateMemory failed for eWNI_SME_NEIGHBOR_BSS_IND"));
 
         return;
     }
@@ -2162,7 +2081,7 @@ limSendSmeNeighborBssInd(tpAniSirGlobal pMac,
     pNewBssInd->length      = (tANI_U16) val;
     pNewBssInd->sessionId = 0;
 
-    vos_mem_copy( (tANI_U8 *) pNewBssInd->bssDescription,
+    palCopyMemory( pMac->hHdd, (tANI_U8 *) pNewBssInd->bssDescription,
                   (tANI_U8 *) &pBssDescr->bssDescription,
                   pBssDescr->bssDescription.length + sizeof(tANI_U16));
 
@@ -2193,19 +2112,19 @@ limSendSmeAddtsRsp(tpAniSirGlobal pMac, tANI_U8 rspReqd, tANI_U32 status, tpPESe
     if (! rspReqd)
         return;
 
-    rsp = vos_mem_malloc(sizeof(tSirAddtsRsp));
-    if ( NULL == rsp )
+    if( eHAL_STATUS_SUCCESS != palAllocateMemory( pMac->hHdd, (void **)&rsp, sizeof(tSirAddtsRsp)))
     {
-        limLog(pMac, LOGP, FL("AllocateMemory failed for ADDTS_RSP"));
+        limLog(pMac, LOGP, FL("palAllocateMemory failed for ADDTS_RSP"));
         return;
     }
 
-    vos_mem_set( (tANI_U8 *) rsp, sizeof(*rsp), 0);
+    palZeroMemory( pMac->hHdd, (tANI_U8 *) rsp, sizeof(*rsp));
     rsp->messageType = eWNI_SME_ADDTS_RSP;
     rsp->rc = status;
     rsp->rsp.status = (enum eSirMacStatusCodes) status;
-    //vos_mem_copy( (tANI_U8 *) &rsp->rsp.tspec, (tANI_U8 *) &addts->tspec, sizeof(addts->tspec));
+    //palCopyMemory( pMac->hHdd, (tANI_U8 *) &rsp->rsp.tspec, (tANI_U8 *) &addts->tspec, sizeof(addts->tspec));  
     rsp->rsp.tspec = tspec;
+   
     /* Update SME session Id and transcation Id */
     rsp->sessionId = smesessionId;
     rsp->transactionId = smetransactionId;
@@ -2240,18 +2159,17 @@ limSendSmeAddtsInd(tpAniSirGlobal pMac, tpSirAddtsReqInfo addts)
            addts->tspec.tsinfo.traffic.tsid,
            addts->tspec.tsinfo.traffic.userPrio);
 
-    rsp = vos_mem_malloc(sizeof(tSirAddtsRsp));
-    if ( NULL == rsp )
+    if( eHAL_STATUS_SUCCESS != palAllocateMemory( pMac->hHdd, (void **)&rsp, sizeof(tSirAddtsRsp)))
     {
         // Log error
-        limLog(pMac, LOGP, FL("AllocateMemory failed for ADDTS_IND"));
+        limLog(pMac, LOGP, FL("palAllocateMemory failed for ADDTS_IND"));
         return;
     }
-    vos_mem_set( (tANI_U8 *) rsp, sizeof(*rsp), 0);
+    palZeroMemory( pMac->hHdd, (tANI_U8 *) rsp, sizeof(*rsp));
 
     rsp->messageType     = eWNI_SME_ADDTS_IND;
 
-    vos_mem_copy( (tANI_U8 *) &rsp->rsp, (tANI_U8 *) addts, sizeof(*addts));
+    palCopyMemory( pMac->hHdd, (tANI_U8 *) &rsp->rsp, (tANI_U8 *) addts, sizeof(*addts));
 
     mmhMsg.type = eWNI_SME_ADDTS_IND;
     mmhMsg.bodyptr = rsp;
@@ -2274,21 +2192,20 @@ limSendSmeDeltsRsp(tpAniSirGlobal pMac, tpSirDeltsReq delts, tANI_U32 status,tpP
     if (! delts->rspReqd)
         return;
 
-    rsp = vos_mem_malloc(sizeof(tSirDeltsRsp));
-    if ( NULL == rsp )
+    if( eHAL_STATUS_SUCCESS != palAllocateMemory( pMac->hHdd, (void **)&rsp, sizeof(tSirDeltsRsp)))
     {
         // Log error
-        limLog(pMac, LOGP, FL("AllocateMemory failed for DELTS_RSP"));
+        limLog(pMac, LOGP, FL("palAllocateMemory failed for DELTS_RSP"));
         return;
     }
-    vos_mem_set( (tANI_U8 *) rsp, sizeof(*rsp), 0);
+    palZeroMemory( pMac->hHdd, (tANI_U8 *) rsp, sizeof(*rsp));
   
     if(psessionEntry != NULL)
     {
         
         rsp->aid             = delts->aid;
-        vos_mem_copy( (tANI_U8 *) &rsp->macAddr[0], (tANI_U8 *) &delts->macAddr[0], 6);
-        vos_mem_copy( (tANI_U8 *) &rsp->rsp, (tANI_U8 *) &delts->req, sizeof(tSirDeltsReqInfo));
+        palCopyMemory( pMac->hHdd, (tANI_U8 *) &rsp->macAddr[0], (tANI_U8 *) &delts->macAddr[0], 6);
+        palCopyMemory( pMac->hHdd, (tANI_U8 *) &rsp->rsp, (tANI_U8 *) &delts->req, sizeof(tSirDeltsReqInfo));
     } 
 
     
@@ -2328,19 +2245,18 @@ limSendSmeDeltsInd(tpAniSirGlobal pMac, tpSirDeltsReqInfo delts, tANI_U16 aid,tp
            delts->tsinfo.traffic.tsid,
            delts->tsinfo.traffic.userPrio);
 
-    rsp = vos_mem_malloc(sizeof(tSirDeltsRsp));
-    if ( NULL == rsp )
+    if( eHAL_STATUS_SUCCESS != palAllocateMemory( pMac->hHdd, (void **)&rsp, sizeof(tSirDeltsRsp)))
     {
         // Log error
-        limLog(pMac, LOGP, FL("AllocateMemory failed for DELTS_IND"));
+        limLog(pMac, LOGP, FL("palAllocateMemory failed for DELTS_IND"));
         return;
     }
-    vos_mem_set( (tANI_U8 *) rsp, sizeof(*rsp), 0);
+    palZeroMemory( pMac->hHdd, (tANI_U8 *) rsp, sizeof(*rsp));
 
     rsp->messageType     = eWNI_SME_DELTS_IND;
     rsp->rc              = eSIR_SUCCESS;
     rsp->aid             = aid;
-    vos_mem_copy( (tANI_U8 *) &rsp->rsp, (tANI_U8 *) delts, sizeof(*delts));
+    palCopyMemory( pMac->hHdd, (tANI_U8 *) &rsp->rsp, (tANI_U8 *) delts, sizeof(*delts));
 
     /* Update SME  session Id and SME transaction Id */
 
@@ -2479,7 +2395,7 @@ limSendSmePEStatisticsRsp(tpAniSirGlobal pMac, tANI_U16 msgType, void* stats)
 
 } /*** end limSendSmePEStatisticsRsp() ***/
 
-#if defined WLAN_FEATURE_VOWIFI_11R || defined FEATURE_WLAN_ESE || defined(FEATURE_WLAN_LFR)
+#if defined WLAN_FEATURE_VOWIFI_11R || defined FEATURE_WLAN_CCX || defined(FEATURE_WLAN_LFR)
 /**
  * limSendSmePEGetRoamRssiRsp()
  *
@@ -2541,62 +2457,6 @@ limSendSmePEGetRoamRssiRsp(tpAniSirGlobal pMac, tANI_U16 msgType, void* stats)
 #endif
 
 
-#if defined(FEATURE_WLAN_ESE) && defined(FEATURE_WLAN_ESE_UPLOAD)
-/**
- * limSendSmePEEseTsmRsp()
- *
- *FUNCTION:
- * This function is called to send tsm stats response to HDD.
- * This function posts the result back to HDD. This is a response to
- * HDD's request to get tsm stats.
- *
- *PARAMS:
- * @param pMac   - Pointer to global pMac structure
- * @param pStats - Pointer to TSM Stats
- *
- * @return none
- */
-
-void
-limSendSmePEEseTsmRsp(tpAniSirGlobal pMac, tAniGetTsmStatsRsp *pStats)
-{
-    tSirMsgQ            mmhMsg;
-    tANI_U8             sessionId;
-    tAniGetTsmStatsRsp *pPeStats = (tAniGetTsmStatsRsp *) pStats;
-    tpPESession         pPeSessionEntry = NULL;
-
-    //Get the Session Id based on Sta Id
-    pPeSessionEntry = peFindSessionByStaId(pMac, pPeStats->staId, &sessionId);
-
-    //Fill the Session Id
-    if(NULL != pPeSessionEntry)
-    {
-      //Fill the Session Id
-      pPeStats->sessionId = pPeSessionEntry->smeSessionId;
-    }
-    else
-    {
-        PELOGE(limLog(pMac, LOGE, FL("Session not found for the Sta id(%d)"),
-            pPeStats->staId);)
-        return;
-    }
-
-    pPeStats->msgType = eWNI_SME_GET_TSM_STATS_RSP;
-    pPeStats->tsmMetrics.RoamingCount = pPeSessionEntry->eseContext.tsm.tsmMetrics.RoamingCount;
-    pPeStats->tsmMetrics.RoamingDly = pPeSessionEntry->eseContext.tsm.tsmMetrics.RoamingDly;
-
-    mmhMsg.type = eWNI_SME_GET_TSM_STATS_RSP;
-    mmhMsg.bodyptr = pStats;
-    mmhMsg.bodyval = 0;
-    MTRACE(macTraceMsgTx(pMac, sessionId, mmhMsg.type));
-    limSysProcessMmhMsgApi(pMac, &mmhMsg, ePROT);
-
-    return;
-} /*** end limSendSmePEEseTsmRsp() ***/
-
-#endif /* FEATURE_WLAN_ESE) && FEATURE_WLAN_ESE_UPLOAD */
-
-
 void
 limSendSmeIBSSPeerInd(
     tpAniSirGlobal      pMac,
@@ -2612,16 +2472,16 @@ limSendSmeIBSSPeerInd(
     tSirMsgQ                  mmhMsg;
     tSmeIbssPeerInd *pNewPeerInd;
     
-    pNewPeerInd = vos_mem_malloc(sizeof(tSmeIbssPeerInd) + beaconLen);
-    if ( NULL == pNewPeerInd )
+    if(eHAL_STATUS_SUCCESS !=
+        palAllocateMemory(pMac->hHdd,(void * *) &pNewPeerInd,(sizeof(tSmeIbssPeerInd) + beaconLen)))
     {
         PELOGE(limLog(pMac, LOGE, FL("Failed to allocate memory"));)
         return;
     }
     
-    vos_mem_set((void *) pNewPeerInd, (sizeof(tSmeIbssPeerInd) + beaconLen), 0);
+    palZeroMemory(pMac->hHdd, (void *) pNewPeerInd, (sizeof(tSmeIbssPeerInd) + beaconLen));
 
-    vos_mem_copy( (tANI_U8 *) pNewPeerInd->peerAddr,
+    palCopyMemory( pMac->hHdd, (tANI_U8 *) pNewPeerInd->peerAddr,
                    peerMacAddr, sizeof(tSirMacAddr));
     pNewPeerInd->staId= staIndex;
     pNewPeerInd->ucastSig = ucastIdx;
@@ -2632,8 +2492,7 @@ limSendSmeIBSSPeerInd(
 
     if ( beacon != NULL )
     {
-        vos_mem_copy((void*) ((tANI_U8*)pNewPeerInd+sizeof(tSmeIbssPeerInd)),
-                     (void*)beacon, beaconLen);
+        palCopyMemory(pMac->hHdd, (void*) ((tANI_U8*)pNewPeerInd+sizeof(tSmeIbssPeerInd)), (void*)beacon, beaconLen);
     }
 
     mmhMsg.type    = msgType;
@@ -2663,13 +2522,12 @@ void limSendExitBmpsInd(tpAniSirGlobal pMac, tExitBmpsReason reasonCode)
     tpSirSmeExitBmpsInd  pExitBmpsInd;
  
     msgLen = sizeof(tSirSmeExitBmpsInd);
-    pExitBmpsInd = vos_mem_malloc(msgLen);
-    if ( NULL == pExitBmpsInd )
+    if( eHAL_STATUS_SUCCESS != palAllocateMemory( pMac->hHdd, (void **)&pExitBmpsInd, msgLen ))
     {
-        limLog(pMac, LOGP, FL("AllocateMemory failed for PMC_EXIT_BMPS_IND "));
+        limLog(pMac, LOGP, FL("palAllocateMemory failed for PMC_EXIT_BMPS_IND "));
         return;
     }
-    vos_mem_set(pExitBmpsInd, msgLen, 0);
+    palZeroMemory(pMac->hHdd, pExitBmpsInd, msgLen);
 
     pExitBmpsInd->mesgType = eWNI_PMC_EXIT_BMPS_IND;
     pExitBmpsInd->mesgLen = msgLen;
@@ -2747,7 +2605,7 @@ limSendSmeAggrQosRsp(tpAniSirGlobal pMac, tpSirAggrQosRsp aggrQosRsp,
     mmhMsg.type = eWNI_SME_FT_AGGR_QOS_RSP;
     mmhMsg.bodyptr = aggrQosRsp;
     mmhMsg.bodyval = 0;
-    MTRACE(macTraceMsgTx(pMac, smesessionId, mmhMsg.type));
+    MTRACE(macTraceMsgTx(pMac, smesessionId , mmhMsg.type));
     limSysProcessMmhMsgApi(pMac, &mmhMsg, ePROT);
 
     return;
@@ -2808,22 +2666,23 @@ void limSendSmeMaxAssocExceededNtf(tpAniSirGlobal pMac, tSirMacAddr peerMacAddr,
     tSirMsgQ         mmhMsg;
     tSmeMaxAssocInd *pSmeMaxAssocInd;
 
-    pSmeMaxAssocInd = vos_mem_malloc(sizeof(tSmeMaxAssocInd));
-    if ( NULL == pSmeMaxAssocInd )
+    if(eHAL_STATUS_SUCCESS !=
+            palAllocateMemory(pMac->hHdd,(void **)&pSmeMaxAssocInd, sizeof(tSmeMaxAssocInd)))
     {
         PELOGE(limLog(pMac, LOGE, FL("Failed to allocate memory"));)
         return;
     }    
-    vos_mem_set((void *) pSmeMaxAssocInd, sizeof(tSmeMaxAssocInd),0);
-    vos_mem_copy( (tANI_U8 *)pSmeMaxAssocInd->peerMac,
-                  (tANI_U8 *)peerMacAddr, sizeof(tSirMacAddr));
+    palZeroMemory(pMac->hHdd, (void *) pSmeMaxAssocInd, sizeof(tSmeMaxAssocInd));
+    palCopyMemory( pMac->hHdd, (tANI_U8 *)pSmeMaxAssocInd->peerMac,
+            (tANI_U8 *)peerMacAddr, sizeof(tSirMacAddr));
     pSmeMaxAssocInd->mesgType  = eWNI_SME_MAX_ASSOC_EXCEEDED;
     pSmeMaxAssocInd->mesgLen    = sizeof(tSmeMaxAssocInd); 
     pSmeMaxAssocInd->sessionId = smesessionId;
     mmhMsg.type = pSmeMaxAssocInd->mesgType;
     mmhMsg.bodyptr = pSmeMaxAssocInd;
-    PELOG1(limLog(pMac, LOG1, FL("msgType %s peerMacAddr "MAC_ADDRESS_STR
-                  " sme session id %d"), "eWNI_SME_MAX_ASSOC_EXCEEDED", MAC_ADDR_ARRAY(peerMacAddr));)
+    PELOG1(limLog(pMac, LOG1, FL("msgType %s peerMacAddr %02x-%02x-%02x-%02x-%02x-%02x"
+                "sme session id %d"),"eWNI_SME_MAX_ASSOC_EXCEEDED", peerMacAddr[0], peerMacAddr[1],
+                peerMacAddr[2], peerMacAddr[3], peerMacAddr[4], peerMacAddr[5], smesessionId);)
     MTRACE(macTraceMsgTx(pMac, smesessionId, mmhMsg.type));
     limSysProcessMmhMsgApi(pMac, &mmhMsg, ePROT);
 
@@ -2849,10 +2708,11 @@ limSendSmeCandidateFoundInd(tpAniSirGlobal pMac, tANI_U8  sessionId)
     tSirMsgQ  mmhMsg;
     tSirSmeCandidateFoundInd *pSirSmeCandidateFoundInd;
 
-    pSirSmeCandidateFoundInd = vos_mem_malloc(sizeof(tSirSmeCandidateFoundInd));
-    if ( NULL == pSirSmeCandidateFoundInd )
+    if ( eHAL_STATUS_SUCCESS != palAllocateMemory( pMac->hHdd,
+                                             (void **)&pSirSmeCandidateFoundInd,
+                                             sizeof(tSirSmeCandidateFoundInd)))
     {
-        limLog(pMac, LOGP, FL("AllocateMemory failed for eWNI_SME_CANDIDATE_FOUND_IND\n"));
+        limLog(pMac, LOGP, FL("palAllocateMemory failed for eWNI_SME_CANDIDATE_FOUND_IND\n"));
         return;
     }
 

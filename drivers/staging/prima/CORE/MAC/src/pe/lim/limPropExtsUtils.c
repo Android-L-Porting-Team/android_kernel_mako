@@ -1,5 +1,25 @@
 /*
- * Copyright (c) 2012-2014 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
+ *
+ * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
+ *
+ *
+ * Permission to use, copy, modify, and/or distribute this software for
+ * any purpose with or without fee is hereby granted, provided that the
+ * above copyright notice and this permission notice appear in all
+ * copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
+ * WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
+ * AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL
+ * DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR
+ * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+ * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+ * PERFORMANCE OF THIS SOFTWARE.
+ */
+/*
+ * Copyright (c) 2012, The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -20,13 +40,8 @@
  */
 
 /*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
- */
-
-/*
  *
+ * Airgo Networks, Inc proprietary. All rights reserved.
  * This file limPropExtsUtils.cc contains the utility functions
  * to populate, parse proprietary extensions required to
  * support ANI feature set.
@@ -84,16 +99,14 @@ limExtractApCapability(tpAniSirGlobal pMac, tANI_U8 *pIE, tANI_U16 ieLen,
 #if !defined WLAN_FEATURE_VOWIFI
     tANI_U32            localPowerConstraints = 0;
 #endif
-    
-    pBeaconStruct = vos_mem_malloc(sizeof(tSirProbeRespBeacon));
-
-    if ( NULL == pBeaconStruct )
+    if(eHAL_STATUS_SUCCESS != palAllocateMemory(pMac->hHdd, 
+                                                (void **)&pBeaconStruct, sizeof(tSirProbeRespBeacon)))
     {
-        limLog(pMac, LOGE, FL("Unable to allocate memory in limExtractApCapability") );
+        limLog(pMac, LOGE, FL("Unable to PAL allocate memory in limExtractApCapability") );
         return;
     }
 
-    vos_mem_set( (tANI_U8 *) pBeaconStruct, sizeof(tSirProbeRespBeacon), 0);
+    palZeroMemory( pMac->hHdd, (tANI_U8 *) pBeaconStruct, sizeof(tSirProbeRespBeacon));
     *qosCap = 0;
     *propCap = 0;
     *uapsd = 0;
@@ -134,14 +147,14 @@ limExtractApCapability(tpAniSirGlobal pMac, tANI_U8 *pIE, tANI_U16 ieLen,
         // Extract the UAPSD flag from WMM Parameter element
         if (pBeaconStruct->wmeEdcaPresent)
             *uapsd = pBeaconStruct->edcaParams.qosInfo.uapsd;
-#if defined FEATURE_WLAN_ESE
+#if defined FEATURE_WLAN_CCX
         /* If there is Power Constraint Element specifically,
          * adapt to it. Hence there is else condition check
          * for this if statement.
          */
-        if ( pBeaconStruct->eseTxPwr.present)
+        if ( pBeaconStruct->ccxTxPwr.present)
         {
-            *localConstraint = pBeaconStruct->eseTxPwr.power_limit;
+            *localConstraint = pBeaconStruct->ccxTxPwr.power_limit;
         }
 #endif
         if (pBeaconStruct->powerConstraintPresent)
@@ -166,13 +179,8 @@ limExtractApCapability(tpAniSirGlobal pMac, tANI_U8 *pIE, tANI_U16 ieLen,
             limLog(pMac, LOGP, FL("Could not update local power constraint to cfg."));
         }
 #endif
-        psessionEntry->countryInfoPresent = FALSE; /* Initializing before first use */
-        if (pBeaconStruct->countryInfoPresent)
-        {
-            psessionEntry->countryInfoPresent = TRUE;
-        }
     }
-    vos_mem_free(pBeaconStruct);
+    palFreeMemory(pMac->hHdd, pBeaconStruct);
     return;
 } /****** end limExtractApCapability() ******/
 

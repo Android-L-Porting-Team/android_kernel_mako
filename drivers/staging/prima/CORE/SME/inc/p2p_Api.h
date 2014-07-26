@@ -1,5 +1,25 @@
 /*
- * Copyright (c) 2012-2013 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
+ *
+ * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
+ *
+ *
+ * Permission to use, copy, modify, and/or distribute this software for
+ * any purpose with or without fee is hereby granted, provided that the
+ * above copyright notice and this permission notice appear in all
+ * copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
+ * WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
+ * AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL
+ * DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR
+ * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+ * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+ * PERFORMANCE OF THIS SOFTWARE.
+ */
+/*
+ * Copyright (c) 2012, The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -19,18 +39,14 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
- */
-
 /******************************************************************************
 *
 * Name:  p2p_Api.h
 *
 * Description: P2P FSM defines.
 *
+* Copyright 2008 (c) Qualcomm, Incorporated.  All Rights Reserved.
+* Qualcomm Confidential and Proprietary.
 *
 ******************************************************************************/
 
@@ -414,14 +430,14 @@ typedef struct sp2pContext
    tANI_U32 ActionFrameLen;
    tANI_U32 ActionFrameSendTimeout;
    eListenDiscoverableState listenDiscoverableState;
-   vos_timer_t listenTimerHandler;
-   vos_timer_t WPSRegistrarCheckTimerHandler;
+   tPalTimerHandle listenTimerHandler;
+   tPalTimerHandle WPSRegistrarCheckTimerHandler;
    tANI_U32 WPSRegistrarSet;
    tANI_U8 bWaitForWPSReady;
    tANI_U8 bInGroupFormation;
-   vos_timer_t discoverTimer;
-   vos_timer_t retryActionFrameTimer;
-   vos_timer_t actionFrameTimer;
+   tPalTimerHandle discoverTimer;
+   tPalTimerHandle retryActionFrameTimer;
+   tPalTimerHandle actionFrameTimer;
    tPalTimerHandle nextActionFrameTimer;
    tANI_U8 peerMacAddress[P2P_MAC_ADDRESS_LEN];
    tANI_U8 selfMacAddress[P2P_MAC_ADDRESS_LEN];
@@ -473,11 +489,11 @@ typedef struct sp2pContext
 #endif
 } tp2pContext, *tPp2pContext;
 
+
 eHalStatus sme_RemainOnChannel( tHalHandle hHal, tANI_U8 sessionId,
                                 tANI_U8 channel, tANI_U32 duration,
-                                remainOnChanCallback callback,
-                                void *pContext,
-                                tANI_U8 isP2PProbeReqAllowed);
+                                remainOnChanCallback callback, 
+                                void *pContext );
 eHalStatus sme_ReportProbeReq( tHalHandle hHal, tANI_U8 flag );
 eHalStatus sme_updateP2pIe( tHalHandle hHal, void *p2pIe, 
                             tANI_U32 p2pIeLength );
@@ -493,14 +509,11 @@ eHalStatus sme_p2pSetPs( tHalHandle hHal, tP2pPsConfig * data );
 eHalStatus p2pRemainOnChannel( tHalHandle hHal, tANI_U8 sessionId,
                                tANI_U8 channel, tANI_U32 duration,
                                remainOnChanCallback callback, void *pContext,
-                               tANI_U8 isP2PProbeReqAllowed,
                                eP2PRemainOnChnReason reason);
 #else
 eHalStatus p2pRemainOnChannel( tHalHandle hHal, tANI_U8 sessionId,
                                tANI_U8 channel, tANI_U32 duration,
-                               remainOnChanCallback callback,
-                               void *pContext,
-                               tANI_U8 isP2PProbeReqAllowed);
+                               remainOnChanCallback callback, void *pContext);
 #endif
 eHalStatus p2pSendAction( tHalHandle hHal, tANI_U8 sessionId,
                           const tANI_U8 *pBuf, tANI_U32 len,
