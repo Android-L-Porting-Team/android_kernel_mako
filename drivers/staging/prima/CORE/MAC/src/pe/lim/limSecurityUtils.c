@@ -1,5 +1,25 @@
 /*
- * Copyright (c) 2012-2013 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
+ *
+ * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
+ *
+ *
+ * Permission to use, copy, modify, and/or distribute this software for
+ * any purpose with or without fee is hereby granted, provided that the
+ * above copyright notice and this permission notice appear in all
+ * copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
+ * WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
+ * AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL
+ * DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR
+ * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+ * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+ * PERFORMANCE OF THIS SOFTWARE.
+ */
+/*
+ * Copyright (c) 2012, The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -20,12 +40,7 @@
  */
 
 /*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
- */
-
-/*
+ * Airgo Networks, Inc proprietary. All rights reserved.
  * This file limUtils.cc contains the utility functions
  * LIM uses.
  * Author:        Chandra Modumudi
@@ -249,9 +264,9 @@ limSearchPreAuthList(tpAniSirGlobal pMac, tSirMacAddr macAddr)
 
     while (pTempNode != NULL)
     {
-        if (vos_mem_compare( (tANI_U8 *) macAddr,
-                             (tANI_U8 *) &pTempNode->peerMacAddr,
-                              sizeof(tSirMacAddr)) )
+        if (palEqualMemory( pMac->hHdd,(tANI_U8 *) macAddr,
+                      (tANI_U8 *) &pTempNode->peerMacAddr,
+                      sizeof(tSirMacAddr)) )
             break;
 
         pTempNode = pTempNode->next;
@@ -356,9 +371,9 @@ limDeletePreAuthNode(tpAniSirGlobal pMac, tSirMacAddr macAddr)
     if (pTempNode == NULL)
         return;
 
-    if (vos_mem_compare( (tANI_U8 *) macAddr,
-                         (tANI_U8 *) &pTempNode->peerMacAddr,
-                         sizeof(tSirMacAddr)) )
+    if (palEqualMemory( pMac->hHdd,(tANI_U8 *) macAddr,
+                  (tANI_U8 *) &pTempNode->peerMacAddr,
+                  sizeof(tSirMacAddr)) )
     {
         // First node to be deleted
 
@@ -378,8 +393,8 @@ limDeletePreAuthNode(tpAniSirGlobal pMac, tSirMacAddr macAddr)
 
     while (pTempNode != NULL)
     {
-        if (vos_mem_compare( (tANI_U8 *) macAddr,
-                             (tANI_U8 *) &pTempNode->peerMacAddr,
+        if (palEqualMemory( pMac->hHdd,(tANI_U8 *) macAddr,
+                      (tANI_U8 *) &pTempNode->peerMacAddr,
                       sizeof(tSirMacAddr)) )
         {
             // Found node to be deleted
@@ -439,7 +454,7 @@ limRestoreFromAuthState(tpAniSirGlobal pMac, tSirResultCodes resultCode, tANI_U1
     tSirMacAddr     currentBssId;
     tLimMlmAuthCnf  mlmAuthCnf;
 
-    vos_mem_copy( (tANI_U8 *) &mlmAuthCnf.peerMacAddr,
+    palCopyMemory( pMac->hHdd, (tANI_U8 *) &mlmAuthCnf.peerMacAddr,
                   (tANI_U8 *) &pMac->lim.gpLimMlmAuthReq->peerMacAddr,
                   sizeof(tSirMacAddr));
     mlmAuthCnf.authType   = pMac->lim.gpLimMlmAuthReq->authType;
@@ -451,7 +466,7 @@ limRestoreFromAuthState(tpAniSirGlobal pMac, tSirResultCodes resultCode, tANI_U1
 
     /// Free up buffer allocated
     /// for pMac->lim.gLimMlmAuthReq
-    vos_mem_free(pMac->lim.gpLimMlmAuthReq);
+    palFreeMemory( pMac->hHdd, pMac->lim.gpLimMlmAuthReq);
     pMac->lim.gpLimMlmAuthReq = NULL;
 
     sessionEntry->limMlmState = sessionEntry->limPrevMlmState;
@@ -550,12 +565,12 @@ limEncryptAuthFrame(tpAniSirGlobal pMac, tANI_U8 keyId, tANI_U8 *pKey, tANI_U8 *
     halGetTxTSFtimer(pMac, (tSirMacTimeStamp *) &seed);
 
     // Bytes 3-7 of seed is key
-    vos_mem_copy((tANI_U8 *) &seed[3], pKey, keyLength - 3);
+    palCopyMemory( pMac->hHdd, (tANI_U8 *) &seed[3], pKey, keyLength - 3);
 
     // Compute CRC-32 and place them in last 4 bytes of plain text
     limComputeCrc32(icv, pPlainText, sizeof(tSirMacAuthFrameBody));
 
-    vos_mem_copy( pPlainText + sizeof(tSirMacAuthFrameBody),
+    palCopyMemory( pMac->hHdd, pPlainText + sizeof(tSirMacAuthFrameBody),
                   icv, SIR_MAC_WEP_ICV_LENGTH);
 
     // Run RC4 on plain text with the seed
@@ -745,10 +760,10 @@ limDecryptAuthFrame(tpAniSirGlobal pMac, tANI_U8 *pKey, tANI_U8 *pEncrBody,
 
 
     // Bytes 0-2 of seed is received IV
-    vos_mem_copy((tANI_U8 *) seed, pEncrBody, SIR_MAC_WEP_IV_LENGTH - 1);
+    palCopyMemory( pMac->hHdd, (tANI_U8 *) seed, pEncrBody, SIR_MAC_WEP_IV_LENGTH - 1);
 
     // Bytes 3-7 of seed is key
-    vos_mem_copy((tANI_U8 *) &seed[3], pKey, keyLength - 3);
+    palCopyMemory( pMac->hHdd, (tANI_U8 *) &seed[3], pKey, keyLength - 3);
 
     // Run RC4 on encrypted text with the seed
     limRC4(pPlainBody,
@@ -787,17 +802,17 @@ void limPostSmeSetKeysCnf( tpAniSirGlobal pMac,
     tLimMlmSetKeysCnf *mlmSetKeysCnf)
 {
   // Prepare and Send LIM_MLM_SETKEYS_CNF
-  vos_mem_copy( (tANI_U8 *) &mlmSetKeysCnf->peerMacAddr,
+  palCopyMemory( pMac->hHdd, (tANI_U8 *) &mlmSetKeysCnf->peerMacAddr,
                 (tANI_U8 *) pMlmSetKeysReq->peerMacAddr,
                 sizeof(tSirMacAddr));
 
-  vos_mem_copy( (tANI_U8 *) &mlmSetKeysCnf->peerMacAddr,
+  palCopyMemory( pMac->hHdd, (tANI_U8 *) &mlmSetKeysCnf->peerMacAddr,
                 (tANI_U8 *) pMlmSetKeysReq->peerMacAddr,
                 sizeof(tSirMacAddr));
 
 
   /// Free up buffer allocated for mlmSetKeysReq
-  vos_mem_free( pMlmSetKeysReq );
+  palFreeMemory( pMac->hHdd, (tANI_U8 *) pMlmSetKeysReq );
   pMac->lim.gpLimMlmSetKeysReq = NULL;
 
   limPostSmeMessage( pMac,
@@ -816,12 +831,12 @@ void limPostSmeRemoveKeyCnf( tpAniSirGlobal pMac,
     tLimMlmRemoveKeyCnf *mlmRemoveKeyCnf)
 {
   // Prepare and Send LIM_MLM_REMOVEKEYS_CNF
-  vos_mem_copy( (tANI_U8 *) &mlmRemoveKeyCnf->peerMacAddr,
+  palCopyMemory( pMac->hHdd, (tANI_U8 *) &mlmRemoveKeyCnf->peerMacAddr,
                 (tANI_U8 *) pMlmRemoveKeyReq->peerMacAddr,
                 sizeof(tSirMacAddr));
 
   /// Free up buffer allocated for mlmRemoveKeysReq
-  vos_mem_free( pMlmRemoveKeyReq );
+  palFreeMemory( pMac->hHdd, (tANI_U8 *) pMlmRemoveKeyReq );
   pMac->lim.gpLimMlmRemoveKeyReq = NULL;
 
   psessionEntry->limMlmState = psessionEntry->limPrevMlmState; //Restore the state.
@@ -874,19 +889,21 @@ tANI_U32 val = 0;
 
   // Package WDA_SET_BSSKEY_REQ message parameters
 
-  pSetBssKeyParams = vos_mem_malloc(sizeof( tSetBssKeyParams ));
-  if ( NULL == pSetBssKeyParams )
+  if( eHAL_STATUS_SUCCESS != palAllocateMemory( pMac->hHdd,
+          (void **) &pSetBssKeyParams,
+         sizeof( tSetBssKeyParams )))     
   {
     limLog( pMac, LOGE,
-        FL( "Unable to allocate memory during SET_BSSKEY" ));
+        FL( "Unable to PAL allocate memory during SET_BSSKEY" ));
 
     // Respond to SME with error code
     mlmSetKeysCnf.resultCode = eSIR_SME_RESOURCES_UNAVAILABLE;
     goto end;
   }
   else
-    vos_mem_set( (void *) pSetBssKeyParams,
-         sizeof( tSetBssKeyParams ), 0);
+    palZeroMemory( pMac->hHdd,
+        (void *) pSetBssKeyParams,
+         sizeof( tSetBssKeyParams ));     
 
   // Update the WDA_SET_BSSKEY_REQ parameters
   pSetBssKeyParams->bssIdx = psessionEntry->bssIdx;
@@ -911,16 +928,18 @@ tANI_U32 val = 0;
     /* IF the key id is non-zero and encryption type is WEP, Send all the 4 
      * keys to HAL with filling the key at right index in pSetBssKeyParams->key. */
     pSetBssKeyParams->numKeys = SIR_MAC_MAX_NUM_OF_DEFAULT_KEYS;
-    vos_mem_copy( (tANI_U8 *) &pSetBssKeyParams->key[pMlmSetKeysReq->key[0].keyId],
-                  (tANI_U8 *) &pMlmSetKeysReq->key[0], sizeof(pMlmSetKeysReq->key[0]));
+    palCopyMemory( pMac->hHdd,
+      (tANI_U8 *) &pSetBssKeyParams->key[pMlmSetKeysReq->key[0].keyId],
+      (tANI_U8 *) &pMlmSetKeysReq->key[0], sizeof(pMlmSetKeysReq->key[0]));
 
   }
   else
   {
     pSetBssKeyParams->numKeys = pMlmSetKeysReq->numKeys;
-    vos_mem_copy( (tANI_U8 *) &pSetBssKeyParams->key,
-                  (tANI_U8 *) &pMlmSetKeysReq->key,
-                  sizeof( tSirKeys ) * pMlmSetKeysReq->numKeys );
+    palCopyMemory( pMac->hHdd,
+      (tANI_U8 *) &pSetBssKeyParams->key,
+      (tANI_U8 *) &pMlmSetKeysReq->key,
+      sizeof( tSirKeys ) * pMlmSetKeysReq->numKeys );
   }
 
   SET_LIM_PROCESS_DEFD_MESGS(pMac, false);
@@ -990,14 +1009,12 @@ tSirRetStatus      retCode;
 tANI_U32 val = 0;
 
   // Package WDA_SET_STAKEY_REQ message parameters
-  pSetStaKeyParams = vos_mem_malloc(sizeof( tSetStaKeyParams ));
-  if ( NULL == pSetStaKeyParams )
-  {
-      limLog( pMac, LOGP, FL( "Unable to allocate memory during SET_BSSKEY" ));
-      return;
-  }
-  else
-      vos_mem_set( (void *) pSetStaKeyParams, sizeof( tSetStaKeyParams ), 0);
+    if( eHAL_STATUS_SUCCESS != palAllocateMemory( pMac->hHdd, (void **) &pSetStaKeyParams,
+                                                                                                 sizeof( tSetStaKeyParams ))) {
+        limLog( pMac, LOGP, FL( "Unable to PAL allocate memory during SET_BSSKEY" ));
+        return;
+    }else
+        palZeroMemory( pMac->hHdd, (void *) pSetStaKeyParams, sizeof( tSetStaKeyParams ));
 
   // Update the WDA_SET_STAKEY_REQ parameters
   pSetStaKeyParams->staIdx = staIdx;
@@ -1051,8 +1068,9 @@ tANI_U32 val = 0;
 
           for(i=0; i < SIR_MAC_MAX_NUM_OF_DEFAULT_KEYS ;i++)
           { 
-              vos_mem_copy( (tANI_U8 *) &pSetStaKeyParams->key[i],
-                            (tANI_U8 *) &pMlmSetKeysReq->key[i], sizeof( tSirKeys ));
+              palCopyMemory( pMac->hHdd,
+                             (tANI_U8 *) &pSetStaKeyParams->key[i],
+                             (tANI_U8 *) &pMlmSetKeysReq->key[i], sizeof( tSirKeys ));
           }
           pSetStaKeyParams->wepType = eSIR_WEP_STATIC;
           sessionEntry->limMlmState = eLIM_MLM_WT_SET_STA_KEY_STATE;
@@ -1060,18 +1078,10 @@ tANI_U32 val = 0;
       }else {
           /*This case the keys are coming from upper layer so need to fill the 
           * key at the default wep key index and send to the HAL */
-          if (defWEPIdx >= SIR_MAC_MAX_NUM_OF_DEFAULT_KEYS)
-          {
-             limLog( pMac, LOGE, FL("WEPIdx length %d more than "
-                                    "the Max limit, reset to Max"),defWEPIdx);
-             vos_mem_free (pSetStaKeyParams);
-             return;
-          }
-          vos_mem_copy((tANI_U8 *) &pSetStaKeyParams->key[defWEPIdx],
-                                (tANI_U8 *) &pMlmSetKeysReq->key[0],
-                                  sizeof( pMlmSetKeysReq->key[0] ));
+          palCopyMemory( pMac->hHdd,
+                             (tANI_U8 *) &pSetStaKeyParams->key[defWEPIdx],
+                             (tANI_U8 *) &pMlmSetKeysReq->key[0], sizeof( pMlmSetKeysReq->key[0] ));
           pMlmSetKeysReq->numKeys = SIR_MAC_MAX_NUM_OF_DEFAULT_KEYS;
-
       }
       break;
   case eSIR_ED_TKIP:
@@ -1080,8 +1090,8 @@ tANI_U32 val = 0;
   case eSIR_ED_WPI: 
 #endif
       {
-          vos_mem_copy( (tANI_U8 *) &pSetStaKeyParams->key,
-                        (tANI_U8 *) &pMlmSetKeysReq->key[0], sizeof( tSirKeys ));
+          palCopyMemory( pMac->hHdd, (tANI_U8 *) &pSetStaKeyParams->key,
+                         (tANI_U8 *) &pMlmSetKeysReq->key[0], sizeof( tSirKeys ));
       }
       break;
   default:
@@ -1140,19 +1150,22 @@ tLimMlmRemoveKeyCnf  mlmRemoveKeysCnf;
 tSirRetStatus      retCode;
 
   // Package WDA_REMOVE_BSSKEY_REQ message parameters
-  pRemoveBssKeyParams = vos_mem_malloc(sizeof( tRemoveBssKeyParams ));
-  if ( NULL == pRemoveBssKeyParams )
+
+  if( eHAL_STATUS_SUCCESS != palAllocateMemory( pMac->hHdd,
+          (void **) &pRemoveBssKeyParams,
+         sizeof( tRemoveBssKeyParams )))     
   {
     limLog( pMac, LOGE,
-        FL( "Unable to allocate memory during REMOVE_BSSKEY" ));
+        FL( "Unable to PAL allocate memory during REMOVE_BSSKEY" ));
 
     // Respond to SME with error code
     mlmRemoveKeysCnf.resultCode = eSIR_SME_RESOURCES_UNAVAILABLE;
     goto end;
   }
   else
-    vos_mem_set( (void *) pRemoveBssKeyParams,
-                  sizeof( tRemoveBssKeyParams ), 0);
+    palZeroMemory( pMac->hHdd,
+        (void *) pRemoveBssKeyParams,
+         sizeof( tRemoveBssKeyParams ));     
 
   // Update the WDA_REMOVE_BSSKEY_REQ parameters
   pRemoveBssKeyParams->bssIdx = psessionEntry->bssIdx;
@@ -1221,7 +1234,7 @@ end:
  */
 void limSendRemoveStaKeyReq( tpAniSirGlobal pMac,
     tLimMlmRemoveKeyReq *pMlmRemoveKeyReq,
-    tANI_U16 staIdx,
+    tANI_U16 staIdx ,
     tpPESession psessionEntry)
 {
 tSirMsgQ           msgQ;
@@ -1229,19 +1242,23 @@ tpRemoveStaKeyParams  pRemoveStaKeyParams = NULL;
 tLimMlmRemoveKeyCnf  mlmRemoveKeyCnf;
 tSirRetStatus      retCode;
 
-  pRemoveStaKeyParams = vos_mem_malloc(sizeof( tRemoveStaKeyParams ));
-  if ( NULL == pRemoveStaKeyParams )
+
+
+  if( eHAL_STATUS_SUCCESS != palAllocateMemory( pMac->hHdd,
+          (void **) &pRemoveStaKeyParams,
+          sizeof( tRemoveStaKeyParams )))
   {
     limLog( pMac, LOGE,
-        FL( "Unable to allocate memory during REMOVE_STAKEY" ));
+        FL( "Unable to PAL allocate memory during REMOVE_STAKEY" ));
 
     // Respond to SME with error code
     mlmRemoveKeyCnf.resultCode = eSIR_SME_RESOURCES_UNAVAILABLE;
     goto end;
   }
   else
-    vos_mem_set( (void *) pRemoveStaKeyParams,
-                  sizeof( tRemoveStaKeyParams ), 0);
+    palZeroMemory( pMac->hHdd,
+        (void *) pRemoveStaKeyParams,
+        sizeof( tRemoveStaKeyParams ));
 
   if( (pMlmRemoveKeyReq->edType == eSIR_ED_WEP104 || pMlmRemoveKeyReq->edType == eSIR_ED_WEP40) &&
         pMlmRemoveKeyReq->wepType == eSIR_WEP_STATIC )
@@ -1281,8 +1298,7 @@ tSirRetStatus      retCode;
     limLog( pMac, LOGE,
         FL("Posting REMOVE_STAKEY to HAL failed, reason=%X"),
         retCode );
-    vos_mem_free(pRemoveStaKeyParams);
-    pRemoveStaKeyParams = NULL;
+    palFreeMemory(pMac->hHdd, pRemoveStaKeyParams);
 
     // Respond to SME with LIM_MLM_REMOVEKEY_CNF
     mlmRemoveKeyCnf.resultCode = eSIR_SME_HAL_SEND_MESSAGE_FAIL;
@@ -1291,10 +1307,6 @@ tSirRetStatus      retCode;
     return;
 
 end:
-  if (pRemoveStaKeyParams)
-  {
-    vos_mem_free(pRemoveStaKeyParams);
-  }
   limPostSmeRemoveKeyCnf( pMac,
       psessionEntry,
       pMlmRemoveKeyReq,
